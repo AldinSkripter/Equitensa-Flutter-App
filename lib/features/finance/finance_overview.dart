@@ -177,7 +177,7 @@ class FinanceOverviewScreen extends ConsumerWidget {
                         'Ustvarite prvi osnutek – zneske izračuna strežnik.',
                       ),
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Eq.muted),
+                      style: TextStyle(color: context.eq.muted),
                     ),
                   ],
                 ),
@@ -216,7 +216,7 @@ class _Hero extends StatelessWidget {
       borderRadius: BorderRadius.circular(26),
       boxShadow: [
         BoxShadow(
-          color: Eq.ink.withValues(alpha: 0.28),
+          color: context.eq.ink.withValues(alpha: 0.28),
           blurRadius: 34,
           offset: const Offset(0, 16),
         ),
@@ -375,9 +375,9 @@ class _Kpi extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
-                  color: Eq.muted,
+                  color: context.eq.muted,
                   height: 1.25,
                 ),
               ),
@@ -392,11 +392,11 @@ class _Kpi extends StatelessWidget {
           child: CountUp(
             cents: cents,
             fmt: fmt,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w600,
               letterSpacing: -0.8,
-              color: Eq.ink2,
+              color: context.eq.ink2,
             ),
           ),
         ),
@@ -437,9 +437,9 @@ class _CountKpi extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
-                  color: Eq.muted,
+                  color: context.eq.muted,
                   height: 1.25,
                 ),
               ),
@@ -450,11 +450,11 @@ class _CountKpi extends StatelessWidget {
         const Spacer(),
         Text(
           count.toString().padLeft(2, '0'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 30,
             fontWeight: FontWeight.w600,
             letterSpacing: -1,
-            color: Eq.ink2,
+            color: context.eq.ink2,
           ),
         ),
       ],
@@ -481,7 +481,7 @@ class DocTile extends ConsumerWidget {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: Eq.violetSoft,
+              color: context.eq.violetSoft,
               borderRadius: BorderRadius.circular(13),
             ),
             child: Icon(
@@ -499,10 +499,10 @@ class DocTile extends ConsumerWidget {
                   doc.customer.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
-                    color: Eq.ink2,
+                    color: context.eq.ink2,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -510,7 +510,7 @@ class DocTile extends ConsumerWidget {
                   '${doc.number ?? t('Entwurf', 'Osnutek')} · ${doc.issueDate} · ${kindLabel(t, doc.kind)}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Eq.muted, fontSize: 12.5),
+                  style: TextStyle(color: context.eq.muted, fontSize: 12.5),
                 ),
               ],
             ),
@@ -521,11 +521,11 @@ class DocTile extends ConsumerWidget {
             children: [
               Text(
                 fmt.money(doc.grossCents),
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
                   letterSpacing: -0.3,
-                  color: Eq.ink2,
+                  color: context.eq.ink2,
                 ),
               ),
               const SizedBox(height: 5),

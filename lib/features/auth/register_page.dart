@@ -1,3 +1,5 @@
+import '../../core/theme.dart';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -96,17 +98,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         children: [
           TextButton.icon(
             onPressed: () => context.go('/welcome'),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFFBBB7CA), padding: EdgeInsets.zero),
+            style: TextButton.styleFrom(foregroundColor: context.eq.muted, padding: EdgeInsets.zero),
             icon: const Icon(LucideIcons.arrowLeft, size: 16),
             label: Text(t('Zurück', 'Nazaj')),
           ),
           const SizedBox(height: 18),
-          Kicker(t('IHR EQUITENSA-KONTO', 'VAŠ RAČUN EQUITENSA'), color: const Color(0xFFC6B6FF)),
+          Kicker(t('IHR EQUITENSA-KONTO', 'VAŠ RAČUN EQUITENSA'), color: context.eq.accent),
           const SizedBox(height: 12),
           Text(
             t('Konto erstellen', 'Ustvari račun'),
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: context.eq.ink,
               fontSize: 34,
               letterSpacing: -1.2,
               height: 1.12,
@@ -119,7 +121,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               'Zuerst Ihr Unternehmenskonto. Ein Zugang für die App und das Web.',
               'Najprej račun vašega podjetja. En dostop za aplikacijo in splet.',
             ),
-            style: const TextStyle(color: Color(0xFFAAA9B7), fontSize: 14, height: 1.6),
+            style: TextStyle(color: context.eq.muted, fontSize: 14, height: 1.6),
           ),
           const SizedBox(height: 24),
           GlassCard(
@@ -167,7 +169,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     const SizedBox(height: 26),
                     Text(
                       t('Land Ihres Unternehmens (Berichtsland)', 'Država vašega podjetja (država poročanja)'),
-                      style: const TextStyle(color: Color(0xFFE0DFE7), fontSize: 12, fontWeight: FontWeight.w500),
+                      style: TextStyle(color: context.eq.ink, fontSize: 12, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 12),
                     CountryCards(
@@ -184,7 +186,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         'Bestimmt Berichtsregeln und -sprache. Später nicht änderbar; eine Gesellschaft pro Konto.',
                         'Določa pravila in jezik poročila. Pozneje ni spremenljivo; ena družba na račun.',
                       ),
-                      style: const TextStyle(color: Color(0xFFAAA9B7), fontSize: 11, height: 1.6),
+                      style: TextStyle(color: context.eq.muted, fontSize: 11, height: 1.6),
                     ),
                     if (_error != null)
                       Padding(
@@ -193,7 +195,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           liveRegion: true,
                           child: Text(
                             _error!,
-                            style: const TextStyle(color: Color(0xFFFF9CB0), fontSize: 13, height: 1.5),
+                            style: TextStyle(color: context.eq.error, fontSize: 13, height: 1.5),
                           ),
                         ),
                       ),
@@ -215,7 +217,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               onPressed: () => context.go('/login'),
               child: Text(
                 t('Schon ein Konto? Anmelden', 'Že imate račun? Prijava'),
-                style: const TextStyle(color: Color(0xFFC6B6FF), fontSize: 13),
+                style: TextStyle(color: context.eq.accent, fontSize: 13),
               ),
             ),
           ),

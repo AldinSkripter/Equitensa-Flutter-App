@@ -238,11 +238,11 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
       const SizedBox(height: 22),
       Text(
         t('Beleg erfassen', 'Zajem računa'),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w700,
           letterSpacing: -0.8,
-          color: Eq.ink2,
+          color: context.eq.ink2,
         ),
       ),
       const SizedBox(height: 8),
@@ -251,7 +251,7 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
           'Foto oder Datei hochladen. Die Erkennung ist nur ein Vorschlag – Aussteller, Datum und Betrag prüfen Sie selbst. Es erfolgt keine automatische Buchung oder Vorsteuerberechnung.',
           'Naložite fotografijo ali datoteko. Prepoznava je le predlog – izdajatelja, datum in znesek preverite sami. Samodejnega knjiženja ali odbitka DDV ni.',
         ),
-        style: const TextStyle(color: Eq.muted, height: 1.5),
+        style: TextStyle(color: context.eq.muted, height: 1.5),
       ),
       const SizedBox(height: 22),
       EqButton(
@@ -290,7 +290,7 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
         const SizedBox(height: 16),
         Text(
           t('Beleg wird gelesen …', 'Branje računa …'),
-          style: const TextStyle(fontWeight: FontWeight.w600, color: Eq.ink2),
+          style: TextStyle(fontWeight: FontWeight.w600, color: context.eq.ink2),
         ),
       ],
     ),
@@ -402,17 +402,17 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
                 avatar: Icon(
                   categoryIcon(c),
                   size: 15,
-                  color: _category == c ? Colors.white : Eq.muted,
+                  color: _category == c ? Colors.white : context.eq.muted,
                 ),
                 label: Text(categoryLabel(t, c)),
                 selected: _category == c,
                 showCheckmark: false,
                 selectedColor: Eq.violet,
                 backgroundColor: Colors.white,
-                side: BorderSide(color: _category == c ? Eq.violet : Eq.line),
+                side: BorderSide(color: _category == c ? Eq.violet : context.eq.line),
                 labelStyle: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: _category == c ? Colors.white : Eq.ink2,
+                  color: _category == c ? Colors.white : context.eq.ink2,
                 ),
                 onSelected: (_) => setState(() => _category = c),
               ),

@@ -24,7 +24,7 @@ class Kicker extends StatelessWidget {
       fontSize: 10.5,
       fontWeight: FontWeight.w600,
       letterSpacing: 1.4,
-      color: color,
+      color: color == context.eq.muted ? context.eq.muted : color,
     ),
   );
 }
@@ -50,19 +50,19 @@ class PageHeader extends StatelessWidget {
       const SizedBox(height: 8),
       Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 30,
           height: 1.1,
           fontWeight: FontWeight.w700,
           letterSpacing: -1,
-          color: Eq.ink2,
+          color: context.eq.ink2,
         ),
       ),
       if (subtitle != null) ...[
         const SizedBox(height: 8),
         Text(
           subtitle!,
-          style: const TextStyle(fontSize: 14.5, height: 1.45, color: Eq.muted),
+          style: TextStyle(fontSize: 14.5, height: 1.45, color: context.eq.muted),
         ),
       ],
       if (action != null) ...[const SizedBox(height: 18), action!],
@@ -83,11 +83,11 @@ class SectionTitle extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 19,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.4,
-              color: Eq.ink2,
+              color: context.eq.ink2,
             ),
           ),
         ),
@@ -117,9 +117,9 @@ class EqCard extends StatelessWidget {
     final radius = BorderRadius.circular(16);
     return Container(
       decoration: BoxDecoration(
-        color: color ?? Eq.surface,
+        color: color ?? context.eq.surface,
         borderRadius: radius,
-        border: Border.all(color: Eq.line),
+        border: Border.all(color: context.eq.line),
         boxShadow: Eq.cardShadow,
       ),
       child: Material(
@@ -190,7 +190,7 @@ class NoticeBanner extends StatelessWidget {
     ),
     child: Text(
       text,
-      style: const TextStyle(fontSize: 12.5, height: 1.5, color: Eq.muted),
+      style: TextStyle(fontSize: 12.5, height: 1.5, color: context.eq.muted),
     ),
   );
 }
@@ -271,9 +271,9 @@ class EqButton extends StatelessWidget {
         height: h,
         decoration: BoxDecoration(
           gradient: primary ? Eq.brandGradient : null,
-          color: primary ? null : (kind == BtnKind.secondary ? Eq.surface : Colors.transparent),
+          color: primary ? null : (kind == BtnKind.secondary ? context.eq.surface : Colors.transparent),
           borderRadius: BorderRadius.circular(compact ? 11 : 13),
-          border: kind == BtnKind.secondary ? Border.all(color: Eq.line) : null,
+          border: kind == BtnKind.secondary ? Border.all(color: context.eq.line) : null,
           boxShadow: primary && !disabled ? Eq.glow : null,
         ),
         child: Material(
@@ -314,10 +314,10 @@ class Labeled extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 7),
         child: Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12.5,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF4E435E),
+            color: context.eq.muted,
           ),
         ),
       ),
@@ -327,7 +327,7 @@ class Labeled extends StatelessWidget {
           padding: const EdgeInsets.only(top: 6),
           child: Text(
             hint!,
-            style: const TextStyle(fontSize: 12, color: Eq.faint, height: 1.4),
+            style: TextStyle(fontSize: 12, color: context.eq.faint, height: 1.4),
           ),
         ),
     ],
@@ -400,7 +400,7 @@ class EqField extends StatelessWidget {
       decoration: InputDecoration(
         hintText: hint,
         suffixText: suffixText,
-        prefixIcon: icon == null ? null : Icon(icon, size: 18, color: Eq.faint),
+        prefixIcon: icon == null ? null : Icon(icon, size: 18, color: context.eq.faint),
         suffixIcon: suffix,
       ),
     ),
@@ -439,9 +439,9 @@ class FilterTabs extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: on ? Eq.violet : Eq.surface,
+              color: on ? Eq.violet : context.eq.surface,
               borderRadius: BorderRadius.circular(11),
-              border: Border.all(color: on ? Eq.violet : Eq.line),
+              border: Border.all(color: on ? Eq.violet : context.eq.line),
             ),
             child: Row(
               children: [
@@ -450,7 +450,7 @@ class FilterTabs extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w600,
-                    color: on ? Colors.white : Eq.ink2,
+                    color: on ? Colors.white : context.eq.ink2,
                   ),
                 ),
                 const SizedBox(width: 7),
@@ -460,7 +460,7 @@ class FilterTabs extends StatelessWidget {
                     vertical: 1.5,
                   ),
                   decoration: BoxDecoration(
-                    color: on ? Colors.white.withValues(alpha: 0.22) : Eq.violetSoft,
+                    color: on ? Colors.white.withValues(alpha: 0.22) : context.eq.violetSoft,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -521,19 +521,19 @@ class StateMessage extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.4,
-              color: Eq.ink2,
+              color: context.eq.ink2,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             body,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Eq.muted,
+            style: TextStyle(
+              color: context.eq.muted,
               height: 1.5,
               fontSize: 14.5,
             ),
@@ -781,6 +781,62 @@ class AsyncView<T> extends ConsumerWidget {
 }
 
 // ------------------------------------------------------------ progress ring
+
+class CompletionRing extends StatelessWidget {
+  const CompletionRing({super.key, required this.percent, required this.label});
+  final int percent;
+  final String label;
+  @override
+  Widget build(BuildContext context) {
+    final value = percent.clamp(0, 100);
+    return Semantics(
+      label: label,
+      value: '$value%',
+      child: ExcludeSemantics(
+        child: SizedBox.square(
+          dimension: 76,
+          child: Stack(
+            fit: StackFit.expand,
+            alignment: Alignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(4),
+                child: CircularProgressIndicator(
+                  value: value / 100,
+                  strokeWidth: 5,
+                  strokeCap: StrokeCap.round,
+                  backgroundColor: context.eq.violetSoft,
+                  color: Eq.violet,
+                ),
+              ),
+              Center(
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '$value',
+                        style: TextStyle(
+                          color: context.eq.ink,
+                          fontSize: 21,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -.7,
+                        ),
+                      ),
+                      TextSpan(
+                        text: '%',
+                        style: TextStyle(color: context.eq.muted, fontSize: 11, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class ProgressRing extends StatelessWidget {
   const ProgressRing({

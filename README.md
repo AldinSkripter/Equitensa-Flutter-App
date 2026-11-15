@@ -34,12 +34,17 @@ matches the web form: company first, business email, password, reporting country
 Responsive graphite account screens, password visibility/strength, server errors,
 and floating Finance/Pay navigation with the create action centered between tabs.
 Pushed iOS pages support the native back gesture.
+
+Appearance supports light, dark and system modes, with the preference saved locally.
+Switch it from the auth header, workspace header or Account settings. Documents
+retain their paper colors in both modes. Returning to the app and pull-to-refresh
+re-read shared backend data without replaying mutations.
 Invoice rendering retains the web document templates and server totals.
 
 ## Validation
 
 - flutter analyze --no-pub
-- flutter test test/app_test.dart test/live_backend_test.dart
+- flutter test
 - flutter build web --release --no-pub
 - flutter build apk --debug
 

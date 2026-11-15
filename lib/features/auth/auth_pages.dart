@@ -43,12 +43,12 @@ class _Head extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Kicker(kicker, color: const Color(0xFFB9A2FF)),
+      Kicker(kicker, color: context.eq.accent),
       const SizedBox(height: 10),
       Text(
         title,
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: context.eq.ink,
           fontSize: 38,
           height: 1.12,
           fontWeight: FontWeight.w700,
@@ -60,7 +60,7 @@ class _Head extends StatelessWidget {
         Text(
           subtitle!,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.7),
+            color: context.eq.ink.withValues(alpha: 0.7),
             fontSize: 15,
             height: 1.5,
           ),
@@ -78,26 +78,26 @@ class _ErrorBanner extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(13),
     decoration: BoxDecoration(
-      color: const Color(0xFFFF7B93).withValues(alpha: 0.12),
+      color: context.eq.error.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(13),
       border: Border.all(
-        color: const Color(0xFFFF7B93).withValues(alpha: 0.4),
+        color: context.eq.error.withValues(alpha: 0.4),
       ),
     ),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(
+        Icon(
           LucideIcons.circleAlert,
           size: 18,
-          color: Color(0xFFFF9CB0),
+          color: context.eq.error,
         ),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              color: Color(0xFFFFC2CE),
+            style: TextStyle(
+              color: context.eq.error,
               fontSize: 13.5,
               height: 1.4,
             ),
@@ -126,12 +126,12 @@ class _LinkText extends StatelessWidget {
             children: [
               TextSpan(
                 text: '$lead ',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.62)),
+                style: TextStyle(color: context.eq.ink.withValues(alpha: 0.62)),
               ),
               TextSpan(
                 text: link,
-                style: const TextStyle(
-                  color: Color(0xFFC9B8FF),
+                style: TextStyle(
+                  color: context.eq.accent,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -168,8 +168,8 @@ Future<void> _demoSheet(BuildContext context, WidgetRef ref) {
           children: [
             Text(
               t('Synthetische Demo-Firma', 'Sintetično demo podjetje'),
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: context.eq.ink,
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.5,
@@ -182,7 +182,7 @@ Future<void> _demoSheet(BuildContext context, WidgetRef ref) {
                 'Samo za lokalni razvoj. Izberite državo demo podjetja.',
               ),
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.65),
+                color: context.eq.ink.withValues(alpha: 0.65),
                 height: 1.4,
               ),
             ),
@@ -349,8 +349,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       onPressed: () => context.go('/forgot'),
                       child: Text(
                         t('Passwort vergessen?', 'Ste pozabili geslo?'),
-                        style: const TextStyle(
-                          color: Color(0xFFC9B8FF),
+                        style: TextStyle(
+                          color: context.eq.accent,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -577,8 +577,8 @@ class _VerifyPageState extends ConsumerState<VerifyPage> {
                       'Link oder Code manuell einfügen',
                       'Ročno prilepi povezavo ali kodo',
                     ),
-                    style: const TextStyle(
-                      color: Color(0xFFC9B8FF),
+                    style: TextStyle(
+                      color: context.eq.accent,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

@@ -66,7 +66,7 @@ class PayOverviewScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(26),
                 boxShadow: [
                   BoxShadow(
-                    color: Eq.ink.withValues(alpha: 0.28),
+                    color: context.eq.ink.withValues(alpha: 0.28),
                     blurRadius: 34,
                     offset: const Offset(0, 16),
                   ),
@@ -257,8 +257,8 @@ class PayOverviewScreen extends ConsumerWidget {
                 'Berechnung und Berichte erstellt ausschließlich das Backend – die App zeigt die Ergebnisse.',
                 'Izračune in poročila pripravi izključno strežnik – aplikacija prikaže rezultate.',
               ),
-              style: const TextStyle(
-                color: Eq.faint,
+              style: TextStyle(
+                color: context.eq.faint,
                 fontSize: 12.5,
                 height: 1.4,
               ),
@@ -293,9 +293,9 @@ class _Kpi extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
-                  color: Eq.muted,
+                  color: context.eq.muted,
                   height: 1.25,
                 ),
               ),
@@ -309,11 +309,11 @@ class _Kpi extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w600,
               letterSpacing: -1.2,
-              color: Eq.ink2,
+              color: context.eq.ink2,
             ),
           ),
         ),
@@ -322,7 +322,7 @@ class _Kpi extends StatelessWidget {
           note,
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 11.5, color: Eq.muted, height: 1.3),
+          style: TextStyle(fontSize: 11.5, color: context.eq.muted, height: 1.3),
         ),
       ],
     ),
@@ -346,7 +346,7 @@ class _GapChart extends StatelessWidget {
         gridData: FlGridData(
           drawVerticalLine: false,
           getDrawingHorizontalLine: (v) => FlLine(
-            color: v == 5 ? Eq.warning.withValues(alpha: 0.5) : Eq.lineSoft,
+            color: v == 5 ? Eq.warning.withValues(alpha: 0.5) : context.eq.lineSoft,
             strokeWidth: v == 5 ? 1.4 : 1,
             dashArray: v == 5 ? [5, 4] : null,
           ),
@@ -363,7 +363,7 @@ class _GapChart extends StatelessWidget {
               interval: 5,
               getTitlesWidget: (v, meta) => Text(
                 '${v.toInt()} %',
-                style: const TextStyle(fontSize: 10.5, color: Eq.muted),
+                style: TextStyle(fontSize: 10.5, color: context.eq.muted),
               ),
             ),
           ),
@@ -378,7 +378,7 @@ class _GapChart extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
                     short.length > 5 ? short.substring(0, 5) : short,
-                    style: const TextStyle(fontSize: 10.5, color: Eq.muted),
+                    style: TextStyle(fontSize: 10.5, color: context.eq.muted),
                   ),
                 );
               },
@@ -432,7 +432,7 @@ class GroupTile extends ConsumerWidget {
     final fmt = fmtOf(ref);
     final g = group;
     final color = g.suppressed
-        ? Eq.muted
+        ? context.eq.muted
         : g.reviewRequired
         ? Eq.warning
         : Eq.success;
@@ -445,10 +445,10 @@ class GroupTile extends ConsumerWidget {
               Expanded(
                 child: Text(
                   g.category,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 15.5,
-                    color: Eq.ink2,
+                    color: context.eq.ink2,
                   ),
                 ),
               ),
@@ -466,7 +466,7 @@ class GroupTile extends ConsumerWidget {
           const SizedBox(height: 4),
           Text(
             '${g.count} ${t('Beschäftigte', 'zaposlenih')} · ${g.female} ${t('Frauen', 'žensk')} · ${g.male} ${t('Männer', 'moških')}',
-            style: const TextStyle(color: Eq.muted, fontSize: 13),
+            style: TextStyle(color: context.eq.muted, fontSize: 13),
           ),
           const SizedBox(height: 12),
           ClipRRect(
@@ -474,7 +474,7 @@ class GroupTile extends ConsumerWidget {
             child: LinearProgressIndicator(
               minHeight: 7,
               value: g.suppressed ? 0 : (g.gap.abs() / 10).clamp(0, 1),
-              backgroundColor: Eq.lineSoft,
+              backgroundColor: context.eq.lineSoft,
               color: color,
             ),
           ),
@@ -485,9 +485,9 @@ class GroupTile extends ConsumerWidget {
                 'Gruppe zu klein – Kennzahlen werden zum Schutz kleiner Gruppen nicht angezeigt.',
                 'Skupina je premajhna – kazalniki se zaradi zaščite majhnih skupin ne prikažejo.',
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12.5,
-                color: Eq.muted,
+                color: context.eq.muted,
                 height: 1.4,
               ),
             ),
@@ -498,9 +498,9 @@ class GroupTile extends ConsumerWidget {
                 'Ab 5 % ohne Begründung ist eine gemeinsame Entgeltbewertung erforderlich.',
                 'Od 5 % brez utemeljitve je potrebna skupna ocena plač.',
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12.5,
-                color: Eq.muted,
+                color: context.eq.muted,
                 height: 1.4,
               ),
             ),
@@ -612,30 +612,7 @@ class PayReportScreen extends ConsumerWidget {
             EqCard(
               child: Row(
                 children: [
-                  SizedBox(
-                    width: 92,
-                    height: 92,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        CircularProgressIndicator(
-                          value: r.percent / 100,
-                          strokeWidth: 8,
-                          strokeCap: StrokeCap.round,
-                          backgroundColor: Eq.violetSoft,
-                          color: Eq.violet,
-                        ),
-                        Text(
-                          '${r.percent}%',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: Eq.ink2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  CompletionRing(percent: r.percent, label: t('Fortschritt', 'Napredek')),
                   const SizedBox(width: 18),
                   Expanded(
                     child: Column(
@@ -643,16 +620,16 @@ class PayReportScreen extends ConsumerWidget {
                       children: [
                         Text(
                           r.ready ? t('Bericht bereit', 'Poročilo pripravljeno') : t('In Vorbereitung', 'V pripravi'),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: Eq.ink2,
+                            color: context.eq.ink2,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '${r.checks.where((c) => c.done).length} / ${r.checks.length} ${t('Schritte erledigt', 'korakov opravljenih')}',
-                          style: const TextStyle(color: Eq.muted),
+                          style: TextStyle(color: context.eq.muted),
                         ),
                       ],
                     ),
@@ -703,7 +680,7 @@ class _Step extends StatelessWidget {
         ? Eq.success
         : active
         ? Eq.violet
-        : Eq.line;
+        : context.eq.line;
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -732,7 +709,7 @@ class _Step extends StatelessWidget {
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 12,
-                              color: active ? Colors.white : Eq.muted,
+                              color: active ? Colors.white : context.eq.muted,
                             ),
                           ),
                         ),
@@ -741,7 +718,7 @@ class _Step extends StatelessWidget {
                   Expanded(
                     child: Container(
                       width: 2,
-                      color: done ? Eq.success.withValues(alpha: 0.4) : Eq.line,
+                      color: done ? Eq.success.withValues(alpha: 0.4) : context.eq.line,
                     ),
                   ),
               ],
@@ -759,14 +736,14 @@ class _Step extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 15.5,
-                      color: done || active ? Eq.ink2 : Eq.muted,
+                      color: done || active ? context.eq.ink2 : context.eq.muted,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     body,
-                    style: const TextStyle(
-                      color: Eq.muted,
+                    style: TextStyle(
+                      color: context.eq.muted,
                       fontSize: 13,
                       height: 1.4,
                     ),

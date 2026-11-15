@@ -317,9 +317,9 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                       children: [
                         Text(
                           t('Gesamt', 'Skupaj'),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11.5,
-                            color: Eq.muted,
+                            color: context.eq.muted,
                           ),
                         ),
                         Text(
@@ -351,7 +351,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: Eq.violetSoft,
+                      color: context.eq.violetSoft,
                       borderRadius: BorderRadius.circular(13),
                     ),
                     child: Row(
@@ -381,7 +381,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                                     Icon(
                                       icon,
                                       size: 15,
-                                      color: _tab == i ? Eq.violet : Eq.muted,
+                                      color: _tab == i ? Eq.violet : context.eq.muted,
                                     ),
                                     const SizedBox(width: 7),
                                     Text(
@@ -389,7 +389,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 13.5,
-                                        color: _tab == i ? Eq.violet : Eq.muted,
+                                        color: _tab == i ? Eq.violet : context.eq.muted,
                                       ),
                                     ),
                                   ],
@@ -421,12 +421,12 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
     children: [
       Row(
         children: [
-          const Icon(LucideIcons.eye, size: 14, color: Eq.muted),
+          Icon(LucideIcons.eye, size: 14, color: context.eq.muted),
           const SizedBox(width: 6),
           Text(
             t('Live-Dokument', 'Dokument v živo'),
-            style: const TextStyle(
-              color: Eq.muted,
+            style: TextStyle(
+              color: context.eq.muted,
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
             ),
@@ -434,7 +434,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
           const Spacer(),
           Text(
             _checking ? t('Wird berechnet…', 'Izračun…') : t('Serverseitig berechnet', 'Izračunano na strežniku'),
-            style: const TextStyle(color: Eq.muted, fontSize: 12.5),
+            style: TextStyle(color: context.eq.muted, fontSize: 12.5),
           ),
         ],
       ),
@@ -479,7 +479,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
           'Vorschau eines Entwurfs. PDF-Umbrüche können abweichen.',
           'Predogled osnutka. Prelomi v PDF se lahko razlikujejo.',
         ),
-        style: const TextStyle(color: Eq.faint, fontSize: 12),
+        style: TextStyle(color: context.eq.faint, fontSize: 12),
       ),
     ],
   );
@@ -494,7 +494,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
         Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: Eq.violetSoft,
+            color: context.eq.violetSoft,
             borderRadius: BorderRadius.circular(13),
           ),
           child: Row(
@@ -524,7 +524,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                         label,
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
-                          color: _kind == k ? Eq.violet : Eq.muted,
+                          color: _kind == k ? Eq.violet : context.eq.muted,
                         ),
                       ),
                     ),
@@ -549,7 +549,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: 15.5,
-                  color: _contact == null ? Eq.faint : Eq.ink,
+                  color: _contact == null ? context.eq.faint : context.eq.ink,
                 ),
               ),
             ),
@@ -638,7 +638,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
             style: TextStyle(
               fontWeight: big ? FontWeight.w700 : FontWeight.w500,
               fontSize: big ? 16 : 14,
-              color: Eq.ink2,
+              color: context.eq.ink2,
             ),
           ),
           const Spacer(),
@@ -647,7 +647,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
             style: TextStyle(
               fontWeight: big ? FontWeight.w700 : FontWeight.w600,
               fontSize: big ? 22 : 14,
-              color: big ? Eq.violet : Eq.ink2,
+              color: big ? Eq.violet : context.eq.ink2,
               letterSpacing: big ? -0.6 : 0,
             ),
           ),
@@ -667,8 +667,8 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                     'Serverseitig berechnet – verbindlich',
                     'Izračunano na strežniku – zavezujoče',
                   ),
-                  style: const TextStyle(
-                    color: Eq.muted,
+                  style: TextStyle(
+                    color: context.eq.muted,
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                   ),
@@ -875,10 +875,10 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                     showCheckmark: false,
                     selectedColor: Eq.violet,
                     backgroundColor: Colors.white,
-                    side: BorderSide(color: l.rate == r ? Eq.violet : Eq.line),
+                    side: BorderSide(color: l.rate == r ? Eq.violet : context.eq.line),
                     labelStyle: TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: l.rate == r ? Colors.white : Eq.ink2,
+                      color: l.rate == r ? Colors.white : context.eq.ink2,
                     ),
                     onSelected: (_) {
                       HapticFeedback.selectionClick();
@@ -916,17 +916,17 @@ class StateMessageBox extends StatelessWidget {
         Text(
           title,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w700,
-            color: Eq.ink2,
+            color: context.eq.ink2,
           ),
         ),
         const SizedBox(height: 6),
         Text(
           body,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Eq.muted, height: 1.5),
+          style: TextStyle(color: context.eq.muted, height: 1.5),
         ),
       ],
     ),
@@ -947,7 +947,7 @@ class _StepHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
           decoration: BoxDecoration(
-            color: Eq.violetSoft,
+            color: context.eq.violetSoft,
             borderRadius: BorderRadius.circular(9),
           ),
           child: Text(
@@ -963,18 +963,18 @@ class _StepHeader extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.4,
-              color: Eq.ink2,
+              color: context.eq.ink2,
             ),
           ),
         ),
         if (trailing != null)
           Text(
             trailing!,
-            style: const TextStyle(color: Eq.faint, fontSize: 12.5),
+            style: TextStyle(color: context.eq.faint, fontSize: 12.5),
           ),
       ],
     ),
@@ -994,7 +994,7 @@ class _MiniBtn extends StatelessWidget {
     icon: Icon(
       icon,
       size: 17,
-      color: onTap == null ? Eq.line : (danger ? Eq.danger : Eq.muted),
+      color: onTap == null ? context.eq.line : (danger ? Eq.danger : context.eq.muted),
     ),
   );
 }
@@ -1085,7 +1085,7 @@ class _ContactPicker extends ConsumerWidget {
                         child: Row(
                           children: [
                             CircleAvatar(
-                              backgroundColor: Eq.violetSoft,
+                              backgroundColor: context.eq.violetSoft,
                               child: Text(
                                 c.name.isEmpty ? '?' : c.name[0].toUpperCase(),
                                 style: const TextStyle(
@@ -1107,8 +1107,8 @@ class _ContactPicker extends ConsumerWidget {
                                   ),
                                   Text(
                                     '${c.postalCode} ${c.city}'.trim(),
-                                    style: const TextStyle(
-                                      color: Eq.muted,
+                                    style: TextStyle(
+                                      color: context.eq.muted,
                                       fontSize: 13,
                                     ),
                                   ),

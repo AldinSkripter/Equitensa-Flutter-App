@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/i18n.dart';
+import '../../core/appearance.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../core/ui.dart';
@@ -80,18 +81,20 @@ class AccountScreen extends ConsumerWidget {
                 'Das Land ist das registrierte Unternehmensland und bestimmt die Regeln. Die Sprache ändert daran nichts.',
                 'Država je registrirana država podjetja in določa pravila. Jezik tega ne spremeni.',
               ),
-              style: const TextStyle(
-                color: Eq.muted,
+              style: TextStyle(
+                color: context.eq.muted,
                 fontSize: 12.5,
                 height: 1.45,
               ),
             ),
           ),
+          SectionTitle(t('Darstellung', 'Videz')),
+          const AppearanceSelector(),
           SectionTitle(t('Sprache', 'Jezik')),
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: Eq.violetSoft,
+              color: context.eq.violetSoft,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
@@ -117,7 +120,7 @@ class AccountScreen extends ConsumerWidget {
                           label,
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
-                            color: override == v ? Eq.violet : Eq.muted,
+                            color: override == v ? Eq.violet : context.eq.muted,
                           ),
                         ),
                       ),
@@ -138,7 +141,7 @@ class AccountScreen extends ConsumerWidget {
             LucideIcons.fingerprint,
             t('Zwei-Faktor-Anmeldung', 'Dvostopenjska prijava'),
             me.mfaEnabled ? t('Aktiv', 'Aktivno') : t('Im Web einrichten', 'Nastavite na spletu'),
-            me.mfaEnabled ? Eq.success : Eq.muted,
+            me.mfaEnabled ? Eq.success : context.eq.muted,
           ),
           const SizedBox(height: 10),
           EqCard(
@@ -150,13 +153,13 @@ class AccountScreen extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     t('Passwort ändern', 'Spremeni geslo'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: Eq.ink2,
+                      color: context.eq.ink2,
                     ),
                   ),
                 ),
-                const Icon(LucideIcons.chevronRight, size: 18, color: Eq.faint),
+                Icon(LucideIcons.chevronRight, size: 18, color: context.eq.faint),
               ],
             ),
           ),
@@ -184,9 +187,9 @@ class AccountScreen extends ConsumerWidget {
                                 'Isti strežnik kot splet',
                               )
                             : api.baseUrl,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: Eq.ink2,
+                          color: context.eq.ink2,
                         ),
                       ),
                       Text(
@@ -196,7 +199,7 @@ class AccountScreen extends ConsumerWidget {
                                 'Lokalno demo okolje · sintetični podatki',
                               )
                             : t('Verbunden', 'Povezano'),
-                        style: const TextStyle(color: Eq.muted, fontSize: 12.5),
+                        style: TextStyle(color: context.eq.muted, fontSize: 12.5),
                       ),
                     ],
                   ),
@@ -241,7 +244,7 @@ class _Row extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.w700, color: Eq.ink2),
+            style: TextStyle(fontWeight: FontWeight.w700, color: context.eq.ink2),
           ),
         ),
         Pill(value, color: color),
@@ -273,11 +276,11 @@ Future<void> _passwordSheet(BuildContext context, WidgetRef ref) {
           children: [
             Text(
               t('Passwort ändern', 'Spremeni geslo'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 21,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.5,
-                color: Eq.ink2,
+                color: context.eq.ink2,
               ),
             ),
             const SizedBox(height: 4),
@@ -286,7 +289,7 @@ Future<void> _passwordSheet(BuildContext context, WidgetRef ref) {
                 'Andere Geräte werden danach abgemeldet.',
                 'Druge naprave bodo nato odjavljene.',
               ),
-              style: const TextStyle(color: Eq.muted),
+              style: TextStyle(color: context.eq.muted),
             ),
             const SizedBox(height: 18),
             EqField(

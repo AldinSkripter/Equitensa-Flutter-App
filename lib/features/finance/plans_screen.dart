@@ -110,8 +110,8 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                         children: [
                           Text(
                             t('Aktueller Stand', 'Trenutno stanje'),
-                            style: const TextStyle(
-                              color: Eq.muted,
+                            style: TextStyle(
+                              color: context.eq.muted,
                               fontSize: 12.5,
                             ),
                           ),
@@ -129,9 +129,9 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                                       orElse: () => PlanInfo(current, current, 0, 0),
                                     ),
                                   ),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: Eq.ink2,
+                              color: context.eq.ink2,
                             ),
                           ),
                         ],
@@ -210,18 +210,18 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                     children: [
                       Text(
                         _displayName(t, country, selected),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 19,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.4,
-                          color: Eq.ink2,
+                          color: context.eq.ink2,
                         ),
                       ),
                       const SizedBox(height: 14),
                       Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: Eq.violetSoft,
+                          color: context.eq.violetSoft,
                           borderRadius: BorderRadius.circular(13),
                         ),
                         child: Row(
@@ -249,7 +249,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                                       label,
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
-                                        color: _interval == k ? Eq.violet : Eq.muted,
+                                        color: _interval == k ? Eq.violet : context.eq.muted,
                                       ),
                                     ),
                                   ),
@@ -356,8 +356,8 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                               fmt.money(
                                 (_quote!['minimumTotalCents'] as num).toInt(),
                               ),
-                          style: const TextStyle(
-                            color: Eq.muted,
+                          style: TextStyle(
+                            color: context.eq.muted,
                             fontSize: 12.5,
                           ),
                         ),
@@ -379,7 +379,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                             'Echte Buchung ist noch nicht freigegeben.',
                             'Pravo naročanje še ni sproščeno.',
                           ),
-                          style: const TextStyle(color: Eq.muted),
+                          style: TextStyle(color: context.eq.muted),
                         ),
                     ],
                   ),
@@ -401,7 +401,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
             l,
             style: TextStyle(
               fontWeight: big ? FontWeight.w700 : FontWeight.w500,
-              color: Eq.ink2,
+              color: context.eq.ink2,
             ),
           ),
         ),
@@ -410,7 +410,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
           style: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: big ? 21 : 14.5,
-            color: big ? Eq.violet : Eq.ink2,
+            color: big ? Eq.violet : context.eq.ink2,
             letterSpacing: big ? -0.5 : 0,
           ),
         ),
@@ -445,10 +445,10 @@ class _PlanCard extends StatelessWidget {
       duration: const Duration(milliseconds: 220),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.eq.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: selected ? Eq.violet : Eq.line,
+          color: selected ? Eq.violet : context.eq.line,
           width: selected ? 2 : 1,
         ),
         boxShadow: selected ? Eq.glow : Eq.cardShadow,
@@ -460,11 +460,11 @@ class _PlanCard extends StatelessWidget {
             children: [
               Text(
                 name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.4,
-                  color: Eq.ink2,
+                  color: context.eq.ink2,
                 ),
               ),
               const Spacer(),
@@ -489,14 +489,14 @@ class _PlanCard extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 5),
                 child: Text(
                   perMonth,
-                  style: const TextStyle(color: Eq.muted, fontSize: 12.5),
+                  style: TextStyle(color: context.eq.muted, fontSize: 12.5),
                 ),
               ),
             ],
           ),
           Text(
             '$seats · $term',
-            style: const TextStyle(color: Eq.muted, fontSize: 12.5),
+            style: TextStyle(color: context.eq.muted, fontSize: 12.5),
           ),
           const SizedBox(height: 12),
           for (final f in features)
@@ -507,14 +507,14 @@ class _PlanCard extends StatelessWidget {
                   Icon(
                     f.$2 ? LucideIcons.circleCheck : LucideIcons.circleMinus,
                     size: 17,
-                    color: f.$2 ? Eq.success : Eq.line,
+                    color: f.$2 ? Eq.success : context.eq.line,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       f.$1,
                       style: TextStyle(
-                        color: f.$2 ? Eq.ink : Eq.faint,
+                        color: f.$2 ? context.eq.ink : context.eq.faint,
                         fontSize: 14,
                       ),
                     ),

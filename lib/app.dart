@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoPage;
@@ -5,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/providers.dart';
+import 'core/appearance.dart';
 import 'core/theme.dart';
 import 'features/account/account_screen.dart';
 import 'features/auth/auth_pages.dart';
@@ -178,16 +181,51 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-class EquitensaApp extends ConsumerWidget {
+class EquitensaApp extends ConsumerStatefulWidget {
   const EquitensaApp({super.key});
+  @override
+  ConsumerState<EquitensaApp> createState() => _EquitensaAppState();
+}
+
+class _EquitensaAppState extends ConsumerState<EquitensaApp> with WidgetsBindingObserver {
+  bool _refreshing = false;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !_refreshing) unawaited(_resume());
+  }
+
+  Future<void> _resume() async {
+    _refreshing = true;
+    try {
+      await refreshWorkspace(ref);
+    } catch (_) {
+      // Keep cached data when offline; the next pull-to-refresh can retry.
+    } finally {
+      _refreshing = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final lang = ref.watch(languageProvider);
     return MaterialApp.router(
       title: 'Equitensa',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
+      darkTheme: buildTheme(brightness: Brightness.dark),
+      themeMode: ref.watch(appearanceProvider),
       locale: Locale(lang),
       supportedLocales: const [Locale('de'), Locale('sl')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,

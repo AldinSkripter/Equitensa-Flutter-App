@@ -97,6 +97,38 @@ void main() {
 
     final analysis = await repo.payAnalysis(2026);
     expect(analysis.count, greaterThan(0));
+    final workflow = await repo.payReadiness(2026);
+    expect(workflow.percent, inInclusiveRange(0, 100));
+    expect(workflow.checks, isNotEmpty);
+
+    // Re-fetch after each mutation: the same server state is used by the web.
+    final edited = await repo.editDocument(saved.result.id, saved.state.revision, {
+      ...draft,
+      'note': 'Updated in Flutter',
+    });
+    final duplicated = await repo.duplicate(edited.result.id, edited.state.revision);
+    expect(duplicated.result.id, isNot(edited.result.id));
+    expect(duplicated.result.isDraft, isTrue);
+    final expense = await repo.createExpense(duplicated.state.revision, {
+      'supplier': 'Test Supplier',
+      'reference': 'TEST-1',
+      'incurredOn': '2026-11-15',
+      'amount': '24.90',
+      'category': 'office',
+      'note': 'Integration test',
+    });
+    expect(expense.result.amountCents, 2490);
+    final profile = await repo.saveProfile(expense.state.revision, {
+      ...expense.state.profile.raw,
+      'country': 'AT',
+      'confirmCountry': true,
+      'name': 'Flutter Integration GmbH',
+    });
+    final refreshed = await repo.finance();
+    expect(refreshed.state.revision, profile.state.revision);
+    expect(refreshed.state.profile.name, 'Flutter Integration GmbH');
+    expect(refreshed.state.expenses.any((item) => item.id == expense.result.id), isTrue);
+    expect(refreshed.state.documents.firstWhere((item) => item.id == edited.result.id).note, 'Updated in Flutter');
     await repo.logout();
   });
 

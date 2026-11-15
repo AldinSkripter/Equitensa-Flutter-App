@@ -48,7 +48,7 @@ class SubPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: Eq.page,
+    backgroundColor: context.eq.page,
     body: SafeArea(
       bottom: false,
       child: Column(
@@ -71,11 +71,11 @@ class SubPage extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 19,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.5,
-                          color: Eq.ink2,
+                          color: context.eq.ink2,
                         ),
                       ),
                     ],
@@ -94,9 +94,9 @@ class SubPage extends StatelessWidget {
                 16,
                 12 + MediaQuery.paddingOf(context).bottom,
               ),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Eq.line)),
+              decoration: BoxDecoration(
+                color: context.eq.surface,
+                border: Border(top: BorderSide(color: context.eq.line)),
               ),
               child: bottom,
             ),
@@ -118,11 +118,11 @@ class _RoundBtn extends StatelessWidget {
       width: 42,
       height: 42,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.eq.surface,
         borderRadius: BorderRadius.circular(13),
-        border: Border.all(color: Eq.line),
+        border: Border.all(color: context.eq.line),
       ),
-      child: Icon(icon, size: 18, color: Eq.ink2),
+      child: Icon(icon, size: 18, color: context.eq.ink2),
     ),
   );
 }
@@ -147,7 +147,7 @@ Future<void> showConflict(BuildContext context, WidgetRef ref) async {
           'Nekdo je te podatke spremenil na spletu ali v aplikaciji. Vaši vnosi ostanejo; preverite trenutno stanje in shranite znova.',
         ),
         textAlign: TextAlign.center,
-        style: const TextStyle(color: Eq.muted, height: 1.5),
+        style: TextStyle(color: context.eq.muted, height: 1.5),
       ),
       actions: [
         EqButton(

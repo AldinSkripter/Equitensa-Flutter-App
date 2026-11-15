@@ -146,10 +146,10 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                         'Kunde, Nummer oder Leistung suchen',
                         'Poišči stranko, številko ali storitev',
                       ),
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         LucideIcons.search,
                         size: 18,
-                        color: Eq.faint,
+                        color: context.eq.faint,
                       ),
                     ),
                   ),
@@ -178,14 +178,14 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.eq.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: const Color(0xFFDCD5E8)),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       LucideIcons.arrowDownUp,
                       size: 18,
-                      color: Eq.ink2,
+                      color: context.eq.ink2,
                     ),
                   ),
                 ),
@@ -237,7 +237,7 @@ class StateMessageInline extends StatelessWidget {
           width: 64,
           height: 64,
           decoration: BoxDecoration(
-            color: Eq.violetSoft,
+            color: context.eq.violetSoft,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Icon(icon, color: Eq.violet, size: 28),
@@ -246,18 +246,18 @@ class StateMessageInline extends StatelessWidget {
         Text(
           title,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.4,
-            color: Eq.ink2,
+            color: context.eq.ink2,
           ),
         ),
         const SizedBox(height: 6),
         Text(
           body,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Eq.muted, height: 1.5),
+          style: TextStyle(color: context.eq.muted, height: 1.5),
         ),
       ],
     ),
@@ -282,12 +282,12 @@ class _Stat extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(fontSize: 12, color: Eq.muted),
+                style: TextStyle(fontSize: 12, color: context.eq.muted),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            Icon(icon, size: 14, color: danger ? Eq.danger : Eq.faint),
+            Icon(icon, size: 14, color: danger ? Eq.danger : context.eq.faint),
           ],
         ),
         const Spacer(),
@@ -300,7 +300,7 @@ class _Stat extends StatelessWidget {
               fontSize: 20,
               fontWeight: FontWeight.w600,
               letterSpacing: -0.6,
-              color: danger ? Eq.danger : Eq.ink2,
+              color: danger ? Eq.danger : context.eq.ink2,
             ),
           ),
         ),

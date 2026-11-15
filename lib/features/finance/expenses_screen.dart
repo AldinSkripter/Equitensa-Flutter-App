@@ -94,15 +94,15 @@ class ExpensesScreen extends ConsumerWidget {
                       children: [
                         Text(
                           t('Erfasste Ausgaben', 'Evidentirani stroški'),
-                          style: const TextStyle(color: Eq.muted, fontSize: 13),
+                          style: TextStyle(color: context.eq.muted, fontSize: 13),
                         ),
                         Text(
                           fmt.money(total),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w700,
                             letterSpacing: -0.8,
-                            color: Eq.ink2,
+                            color: context.eq.ink2,
                           ),
                         ),
                       ],
@@ -110,7 +110,7 @@ class ExpensesScreen extends ConsumerWidget {
                   ),
                   Text(
                     '${list.length}',
-                    style: const TextStyle(color: Eq.faint, fontSize: 13),
+                    style: TextStyle(color: context.eq.faint, fontSize: 13),
                   ),
                 ],
               ),
@@ -137,7 +137,7 @@ class ExpensesScreen extends ConsumerWidget {
                           width: 46,
                           height: 46,
                           decoration: BoxDecoration(
-                            color: Eq.violetSoft,
+                            color: context.eq.violetSoft,
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Icon(
@@ -155,10 +155,10 @@ class ExpensesScreen extends ConsumerWidget {
                                 e.supplier,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 15,
-                                  color: Eq.ink2,
+                                  color: context.eq.ink2,
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -166,8 +166,8 @@ class ExpensesScreen extends ConsumerWidget {
                                 '${categoryLabel(t, e.category)} · ${e.incurredOn} · ${e.reference}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Eq.muted,
+                                style: TextStyle(
+                                  color: context.eq.muted,
                                   fontSize: 12.5,
                                 ),
                               ),

@@ -12,6 +12,15 @@ final repositoryProvider = Provider<EquitensaRepository>(
   (ref) => EquitensaRepository(ref.watch(apiClientProvider)),
 );
 
+/// Re-read shared web data without replaying mutations or replacing form input.
+Future<void> refreshWorkspace(WidgetRef ref) async {
+  if (ref.read(sessionProvider).value == null) return;
+  await ref.read(sessionProvider.notifier).refresh();
+  ref.invalidate(financeProvider);
+  ref.invalidate(payAnalysisProvider);
+  ref.invalidate(payReadinessProvider);
+}
+
 /// Authenticated user + company, or `null` when signed out. Restored from the cookie on start.
 class SessionNotifier extends AsyncNotifier<Me?> {
   @override

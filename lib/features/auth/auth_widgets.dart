@@ -2,7 +2,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import '../../core/i18n.dart';
+import '../../core/appearance.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../core/ui.dart';
@@ -17,9 +19,9 @@ class GlassCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: padding,
     decoration: BoxDecoration(
-      color: const Color(0xFF1B1C24),
+      color: context.eq.surface,
       borderRadius: BorderRadius.circular(radius),
-      border: Border.all(color: const Color(0xFF34343E)),
+      border: Border.all(color: context.eq.line),
     ),
     child: child,
   );
@@ -86,20 +88,20 @@ class _AuthFieldState extends State<AuthField> {
     children: [
       Text(
         widget.label,
-        style: const TextStyle(color: Color(0xFFE0DFE7), fontSize: 12, fontWeight: FontWeight.w500),
+        style: TextStyle(color: context.eq.ink, fontSize: 12, fontWeight: FontWeight.w500),
       ),
       const SizedBox(height: 9),
       AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         decoration: BoxDecoration(
-          color: const Color(0xFF111218),
+          color: context.eq.page,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: widget.error != null
                 ? Eq.danger
                 : _focus.hasFocus
-                ? const Color(0xFFC6B6FF)
-                : const Color(0xFF393943),
+                ? context.eq.accent
+                : context.eq.line,
           ),
         ),
         child: TextField(
@@ -117,13 +119,13 @@ class _AuthFieldState extends State<AuthField> {
           maxLength: widget.maxLength,
           inputFormatters: widget.formatters,
           textCapitalization: widget.textCapitalization,
-          cursorColor: const Color(0xFFC6B6FF),
-          style: const TextStyle(color: Colors.white, fontSize: 15),
+          cursorColor: context.eq.accent,
+          style: TextStyle(color: context.eq.ink, fontSize: 15),
           decoration: InputDecoration(
             counterText: '',
             filled: false,
             hintText: widget.hint,
-            hintStyle: const TextStyle(color: Color(0xFF747381)),
+            hintStyle: TextStyle(color: context.eq.faint),
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
@@ -133,7 +135,7 @@ class _AuthFieldState extends State<AuthField> {
                 : Icon(
                     widget.icon,
                     size: 18,
-                    color: _focus.hasFocus ? const Color(0xFFC6B6FF) : const Color(0xFFAAA9B7),
+                    color: _focus.hasFocus ? context.eq.accent : context.eq.muted,
                   ),
             suffixIcon: widget.obscure
                 ? IconButton(
@@ -142,7 +144,7 @@ class _AuthFieldState extends State<AuthField> {
                     icon: Icon(
                       _hidden ? LucideIcons.eye : LucideIcons.eyeOff,
                       size: 18,
-                      color: const Color(0xFFAAA9B7),
+                      color: context.eq.muted,
                     ),
                   )
                 : null,
@@ -152,7 +154,7 @@ class _AuthFieldState extends State<AuthField> {
       if (widget.error != null)
         Padding(
           padding: const EdgeInsets.only(top: 8),
-          child: Text(widget.error!, style: const TextStyle(color: Color(0xFFFF9CB0), fontSize: 12)),
+          child: Text(widget.error!, style: TextStyle(color: context.eq.error, fontSize: 12)),
         ),
     ],
   );
@@ -196,7 +198,7 @@ class StrengthMeter extends StatelessWidget {
                     height: 3,
                     margin: EdgeInsets.only(right: i == 3 ? 0 : 5),
                     decoration: BoxDecoration(
-                      color: i < strength ? color : const Color(0xFF393943),
+                      color: i < strength ? color : context.eq.line,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -208,7 +210,7 @@ class StrengthMeter extends StatelessWidget {
             password.length < 12
                 ? t('Mindestens 12 Zeichen', 'Vsaj 12 znakov')
                 : '${t('Passwortstärke', 'Moč gesla')} · $strength/4',
-            style: const TextStyle(color: Color(0xFFAAA9B7), fontSize: 11),
+            style: TextStyle(color: context.eq.muted, fontSize: 11),
           ),
         ],
       ),
@@ -230,7 +232,7 @@ class CountryCards extends StatelessWidget {
             child: Semantics(
               selected: c == selected,
               child: Material(
-                color: c == selected ? const Color(0xFF373047) : const Color(0xFF15161D),
+                color: c == selected ? context.eq.violetSoft : context.eq.bg,
                 borderRadius: BorderRadius.circular(14),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(14),
@@ -242,7 +244,7 @@ class CountryCards extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 4),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: c == selected ? const Color(0xFFC6B6FF) : const Color(0xFF393943)),
+                      border: Border.all(color: c == selected ? context.eq.accent : context.eq.line),
                     ),
                     child: Column(
                       children: [
@@ -250,14 +252,14 @@ class CountryCards extends StatelessWidget {
                         const SizedBox(height: 10),
                         Text(
                           c.code,
-                          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                          style: TextStyle(color: context.eq.ink, fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 5),
                         Text(
                           c.label,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: Color(0xFFAAA9B7), fontSize: 10),
+                          style: TextStyle(color: context.eq.muted, fontSize: 10),
                         ),
                       ],
                     ),
@@ -282,8 +284,8 @@ class GlassButton extends StatelessWidget {
     height: 54,
     child: OutlinedButton(
       style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.white,
-        side: const BorderSide(color: Color(0xFF494852)),
+        foregroundColor: context.eq.ink,
+        side: BorderSide(color: context.eq.line),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       onPressed: onPressed,
@@ -305,13 +307,13 @@ class AuthFrame extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final country = ref.watch(authCountryProvider);
     return Scaffold(
-      backgroundColor: const Color(0xFF111218),
+      backgroundColor: context.eq.page,
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF20212B), Color(0xFF111218), Color(0xFF18151F)],
+            colors: [context.eq.bg, context.eq.page, context.eq.page],
           ),
         ),
         child: SafeArea(
@@ -321,35 +323,36 @@ class AuthFrame extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(24, 18, 16, 12),
                 child: Row(
                   children: [
-                    const Wordmark(size: 22),
+                    Wordmark(size: 22, color: context.eq.ink),
                     const Spacer(),
+                    const AppearanceButton(),
                     PopupMenuButton<Country>(
                       tooltip: 'Sprache / Jezik',
-                      color: const Color(0xFF272630),
+                      color: context.eq.surface,
                       onSelected: (c) => ref.read(authCountryProvider.notifier).set(c),
                       itemBuilder: (_) => [
                         for (final c in Country.values)
                           PopupMenuItem(
                             value: c,
-                            child: Text('${c.flag}  ${c.label}', style: const TextStyle(color: Colors.white)),
+                            child: Text('${c.flag}  ${c.label}', style: TextStyle(color: context.eq.ink)),
                           ),
                       ],
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFF393943)),
+                          border: Border.all(color: context.eq.line),
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Row(
                           children: [
-                            const Icon(LucideIcons.globe, color: Color(0xFFAAA9B7), size: 14),
+                            Icon(LucideIcons.globe, color: context.eq.muted, size: 14),
                             const SizedBox(width: 8),
                             Text(
                               country.language.toUpperCase(),
-                              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                              style: TextStyle(color: context.eq.ink, fontSize: 11, fontWeight: FontWeight.w600),
                             ),
                             const SizedBox(width: 6),
-                            const Icon(LucideIcons.chevronDown, size: 12, color: Color(0xFFAAA9B7)),
+                            Icon(LucideIcons.chevronDown, size: 12, color: context.eq.muted),
                           ],
                         ),
                       ),
@@ -369,7 +372,7 @@ class AuthFrame extends ConsumerWidget {
                         Expanded(
                           child: Padding(padding: const EdgeInsets.all(64), child: _AuthEditorial()),
                         ),
-                        Container(width: 1, color: const Color(0xFF32313B)),
+                        Container(width: 1, color: context.eq.line),
                         Expanded(child: form),
                       ],
                     );
@@ -392,12 +395,12 @@ class _AuthEditorial extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Kicker('EQUITENSA / PAY + FINANCE', color: Color(0xFFB4A3E8)),
+          Kicker('EQUITENSA / PAY + FINANCE', color: context.eq.accent),
           const SizedBox(height: 30),
           Text(
             t('Mehr Klarheit.\nMehr Freiraum.', 'Več jasnosti.\nVeč svobode.'),
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: context.eq.ink,
               fontSize: 64,
               height: 1.08,
               letterSpacing: -3,
@@ -407,13 +410,13 @@ class _AuthEditorial extends ConsumerWidget {
           const SizedBox(height: 24),
           Text(
             t('Ihr Unternehmen. Alles im Blick.', 'Vaše podjetje. Vse na enem mestu.'),
-            style: const TextStyle(color: Color(0xFFAAA9B7), fontSize: 19, height: 1.6),
+            style: TextStyle(color: context.eq.muted, fontSize: 19, height: 1.6),
           ),
           const SizedBox(height: 52),
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFF3A3945)),
+              border: Border.all(color: context.eq.line),
               borderRadius: BorderRadius.circular(24),
               color: Colors.white.withValues(alpha: .025),
             ),
@@ -422,12 +425,12 @@ class _AuthEditorial extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(LucideIcons.layers, color: Color(0xFFB4A3E8), size: 20),
+                    Icon(LucideIcons.layers, color: context.eq.accent, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         t('Ein Workspace. Alles verbunden.', 'En prostor. Vse povezano.'),
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                        style: TextStyle(color: context.eq.ink, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
@@ -438,14 +441,14 @@ class _AuthEditorial extends ConsumerWidget {
                     'Rechnungen, Kontakte und Entgelttransparenz.\nIn Ihrer App und im Web.',
                     'Računi, stiki in transparentnost plač.\nV aplikaciji in na spletu.',
                   ),
-                  style: const TextStyle(color: Color(0xFFAAA9B7), fontSize: 15, height: 1.8),
+                  style: TextStyle(color: context.eq.muted, fontSize: 15, height: 1.8),
                 ),
                 const SizedBox(height: 24),
-                const Divider(color: Color(0xFF34343E)),
+                Divider(color: context.eq.line),
                 const SizedBox(height: 18),
-                const Text(
+                Text(
                   'PAY     /     FINANCE',
-                  style: TextStyle(color: Color(0xFFD8D2E8), fontSize: 12, letterSpacing: 3),
+                  style: TextStyle(color: context.eq.muted, fontSize: 12, letterSpacing: 3),
                 ),
               ],
             ),

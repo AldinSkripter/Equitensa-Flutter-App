@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/i18n.dart';
+import '../../core/appearance.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../core/ui.dart';
@@ -63,7 +64,19 @@ class AppShell extends ConsumerWidget {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(30),
                   ),
-                  child: ColoredBox(color: Eq.page, child: child),
+                  child: ColoredBox(
+                    color: context.eq.page,
+                    child: RefreshIndicator(
+                      onRefresh: () async {
+                        try {
+                          await refreshWorkspace(ref);
+                        } catch (error) {
+                          if (context.mounted) showApiError(context, error);
+                        }
+                      },
+                      child: child,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -150,6 +163,10 @@ class _Stage extends ConsumerWidget {
                         ),
                       ],
                     ),
+                  ),
+                  Theme(
+                    data: buildTheme(brightness: Brightness.dark),
+                    child: const AppearanceButton(),
                   ),
                   _GlassIcon(
                     icon: LucideIcons.circleUser,
@@ -330,15 +347,15 @@ class _Dock extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(8),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.eq.surface,
       borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: const Color(0xFFE8E6EF)),
-      boxShadow: [BoxShadow(color: Eq.ink.withValues(alpha: .10), blurRadius: 32, offset: const Offset(0, 8))],
+      border: Border.all(color: context.eq.line),
+      boxShadow: [BoxShadow(color: context.eq.ink.withValues(alpha: .10), blurRadius: 32, offset: const Offset(0, 8))],
     ),
     child: Row(
       children: [
         for (var i = 0; i < tabs.length; i++) ...[
-          if (showCreate && i == tabs.length ~/ 2) _createButton(),
+          if (showCreate && i == tabs.length ~/ 2) _createButton(context),
           Expanded(
             child: Semantics(
               selected: i == index,
@@ -354,13 +371,13 @@ class _Dock extends StatelessWidget {
                     duration: const Duration(milliseconds: 220),
                     padding: const EdgeInsets.symmetric(vertical: 11),
                     decoration: BoxDecoration(
-                      color: i == index ? Eq.violetSoft : Colors.transparent,
+                      color: i == index ? context.eq.violetSoft : Colors.transparent,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(tabs[i].icon, size: 21, color: i == index ? Eq.violetDeep : Eq.faint),
+                        Icon(tabs[i].icon, size: 21, color: i == index ? context.eq.accent : context.eq.faint),
                         const SizedBox(height: 5),
                         Text(
                           t(tabs[i].de, tabs[i].sl),
@@ -369,7 +386,7 @@ class _Dock extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: i == index ? Eq.violetDeep : Eq.muted,
+                            color: i == index ? context.eq.accent : context.eq.muted,
                           ),
                         ),
                       ],
@@ -384,7 +401,7 @@ class _Dock extends StatelessWidget {
     ),
   );
 
-  Widget _createButton() => Expanded(
+  Widget _createButton(BuildContext context) => Expanded(
     child: Center(
       child: SizedBox(
         width: 48,
@@ -392,7 +409,8 @@ class _Dock extends StatelessWidget {
         child: IconButton.filled(
           tooltip: t('Neu erstellen', 'Ustvari novo'),
           style: IconButton.styleFrom(
-            backgroundColor: Eq.ink,
+            backgroundColor: Eq.violet,
+            foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
           onPressed: onCreate,
@@ -408,7 +426,7 @@ Future<void> showCreateSheet(BuildContext context, WidgetRef ref) {
   final t = trOf(ref);
   return showModalBottomSheet<void>(
     context: context,
-    backgroundColor: Eq.surface,
+    backgroundColor: context.eq.surface,
     builder: (ctx) => SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -461,7 +479,7 @@ Future<void> showCreateSheet(BuildContext context, WidgetRef ref) {
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: Eq.violetSoft,
+                          color: context.eq.violetSoft,
                           borderRadius: BorderRadius.circular(13),
                         ),
                         child: Icon(item.$1, size: 20, color: Eq.violet),
@@ -473,26 +491,26 @@ Future<void> showCreateSheet(BuildContext context, WidgetRef ref) {
                           children: [
                             Text(
                               item.$2,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15.5,
-                                color: Eq.ink2,
+                                color: context.eq.ink2,
                               ),
                             ),
                             Text(
                               item.$3,
-                              style: const TextStyle(
-                                color: Eq.muted,
+                              style: TextStyle(
+                                color: context.eq.muted,
                                 fontSize: 13,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         LucideIcons.chevronRight,
                         size: 18,
-                        color: Eq.faint,
+                        color: context.eq.faint,
                       ),
                     ],
                   ),

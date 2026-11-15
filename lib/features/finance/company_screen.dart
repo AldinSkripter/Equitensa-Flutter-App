@@ -241,7 +241,7 @@ class _CompanyScreenState extends ConsumerState<CompanyScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: Eq.violetSoft,
+                    color: context.eq.violetSoft,
                     borderRadius: BorderRadius.circular(13),
                   ),
                   child: Row(
@@ -271,14 +271,14 @@ class _CompanyScreenState extends ConsumerState<CompanyScreen> {
                                   Icon(
                                     icon,
                                     size: 15,
-                                    color: _tab == i ? Eq.violet : Eq.muted,
+                                    color: _tab == i ? Eq.violet : context.eq.muted,
                                   ),
                                   const SizedBox(width: 7),
                                   Text(
                                     label,
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
-                                      color: _tab == i ? Eq.violet : Eq.muted,
+                                      color: _tab == i ? Eq.violet : context.eq.muted,
                                     ),
                                   ),
                                 ],
@@ -312,10 +312,10 @@ class _CompanyScreenState extends ConsumerState<CompanyScreen> {
             showCheckmark: false,
             selectedColor: Eq.violet,
             backgroundColor: Colors.white,
-            side: BorderSide(color: _design[key] == o.$1 ? Eq.violet : Eq.line),
+            side: BorderSide(color: _design[key] == o.$1 ? Eq.violet : context.eq.line),
             labelStyle: TextStyle(
               fontWeight: FontWeight.w600,
-              color: _design[key] == o.$1 ? Colors.white : Eq.ink2,
+              color: _design[key] == o.$1 ? Colors.white : context.eq.ink2,
             ),
             onSelected: (_) => setState(() => _design[key] = o.$1),
           ),
@@ -327,12 +327,12 @@ class _CompanyScreenState extends ConsumerState<CompanyScreen> {
       children: [
         Row(
           children: [
-            const Icon(LucideIcons.eye, size: 14, color: Eq.muted),
+            Icon(LucideIcons.eye, size: 14, color: context.eq.muted),
             const SizedBox(width: 6),
             Text(
               t('Live-Vorschau', 'Predogled v živo'),
-              style: const TextStyle(
-                color: Eq.muted,
+              style: TextStyle(
+                color: context.eq.muted,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
               ),
@@ -340,7 +340,7 @@ class _CompanyScreenState extends ConsumerState<CompanyScreen> {
             const Spacer(),
             Text(
               'A4 · ${_design['template']}',
-              style: const TextStyle(color: Eq.faint, fontSize: 12.5),
+              style: TextStyle(color: context.eq.faint, fontSize: 12.5),
             ),
           ],
         ),
@@ -372,7 +372,7 @@ class _CompanyScreenState extends ConsumerState<CompanyScreen> {
             'Das Design gilt für neue Dokumente und Entwürfe. Bereits ausgestellte Testdokumente behalten ihren gespeicherten Stand.',
             'Izgled velja za nove dokumente in osnutke. Že izdani testni dokumenti obdržijo shranjeno stanje.',
           ),
-          style: const TextStyle(color: Eq.faint, fontSize: 12, height: 1.4),
+          style: TextStyle(color: context.eq.faint, fontSize: 12, height: 1.4),
         ),
         _h('01', t('Vorlage', 'Predloga')),
         chips('template', [
@@ -424,7 +424,7 @@ class _CompanyScreenState extends ConsumerState<CompanyScreen> {
                     const SizedBox(height: 5),
                     Text(
                       p.$1,
-                      style: const TextStyle(fontSize: 11, color: Eq.muted),
+                      style: TextStyle(fontSize: 11, color: context.eq.muted),
                     ),
                   ],
                 ),
@@ -469,7 +469,7 @@ class _CompanyScreenState extends ConsumerState<CompanyScreen> {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: Eq.violetSoft,
+                  color: context.eq.violetSoft,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: _logo.isEmpty
@@ -495,7 +495,7 @@ class _CompanyScreenState extends ConsumerState<CompanyScreen> {
                     ),
                     Text(
                       'PNG / JPEG · 250 KB',
-                      style: const TextStyle(color: Eq.muted, fontSize: 12.5),
+                      style: TextStyle(color: context.eq.muted, fontSize: 12.5),
                     ),
                   ],
                 ),
@@ -648,7 +648,7 @@ class _CompanyScreenState extends ConsumerState<CompanyScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
           decoration: BoxDecoration(
-            color: Eq.violetSoft,
+            color: context.eq.violetSoft,
             borderRadius: BorderRadius.circular(9),
           ),
           child: Text(
@@ -663,11 +663,11 @@ class _CompanyScreenState extends ConsumerState<CompanyScreen> {
         const SizedBox(width: 10),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.4,
-            color: Eq.ink2,
+            color: context.eq.ink2,
           ),
         ),
       ],

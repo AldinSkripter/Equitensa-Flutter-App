@@ -147,9 +147,9 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                   height: 42,
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.eq.surface,
                     borderRadius: BorderRadius.circular(13),
-                    border: Border.all(color: Eq.line),
+                    border: Border.all(color: context.eq.line),
                   ),
                   child: Row(
                     children: [
@@ -189,18 +189,18 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                             const SizedBox(height: 10),
                             Text(
                               d.customer.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: -0.4,
-                                color: Eq.ink2,
+                                color: context.eq.ink2,
                               ),
                             ),
                             const SizedBox(height: 3),
                             Text(
                               '${t('Fällig', 'Zapadlost')}: ${d.dueDate}',
-                              style: const TextStyle(
-                                color: Eq.muted,
+                              style: TextStyle(
+                                color: context.eq.muted,
                                 fontSize: 13,
                               ),
                             ),
@@ -212,11 +212,11 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                         children: [
                           Text(
                             fmt.money(d.grossCents),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
                               letterSpacing: -0.8,
-                              color: Eq.ink2,
+                              color: context.eq.ink2,
                             ),
                           ),
                           if (d.isUnpaid)
@@ -238,12 +238,12 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                   padding: const EdgeInsets.only(left: 4, bottom: 8),
                   child: Row(
                     children: [
-                      const Icon(LucideIcons.eye, size: 14, color: Eq.muted),
+                      Icon(LucideIcons.eye, size: 14, color: context.eq.muted),
                       const SizedBox(width: 6),
                       Text(
                         t('Dokument vom Server', 'Dokument s strežnika'),
-                        style: const TextStyle(
-                          color: Eq.muted,
+                        style: TextStyle(
+                          color: context.eq.muted,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
                         ),
@@ -286,7 +286,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                             Expanded(
                               child: Text(
                                 '${p.paidOn}${p.reference.isEmpty ? '' : ' · ${p.reference}'}',
-                                style: const TextStyle(color: Eq.muted),
+                                style: TextStyle(color: context.eq.muted),
                               ),
                             ),
                             Text(
@@ -400,11 +400,11 @@ Future<void> showPaymentSheet(BuildContext context, WidgetRef ref, FinDoc d) {
           children: [
             Text(
               t('Zahlung erfassen', 'Evidentiraj plačilo'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 21,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.5,
-                color: Eq.ink2,
+                color: context.eq.ink2,
               ),
             ),
             const SizedBox(height: 4),
@@ -413,7 +413,7 @@ Future<void> showPaymentSheet(BuildContext context, WidgetRef ref, FinDoc d) {
                 'Nur manuell erfasst – es wird keine Bankbuchung ausgelöst.',
                 'Samo ročni vnos – bančna transakcija se ne sproži.',
               ),
-              style: const TextStyle(color: Eq.muted),
+              style: TextStyle(color: context.eq.muted),
             ),
             const SizedBox(height: 18),
             EqField(
@@ -615,11 +615,11 @@ class _IssueSheetState extends ConsumerState<_IssueSheet> {
           children: [
             Text(
               t('Testausstellung prüfen', 'Preveri testno izdajo'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 21,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.5,
-                color: Eq.ink2,
+                color: context.eq.ink2,
               ),
             ),
             const SizedBox(height: 4),
@@ -628,7 +628,7 @@ class _IssueSheetState extends ConsumerState<_IssueSheet> {
                 'Prüft Pflichtfelder – keine Empfänger- oder Schema-Akzeptanz. Erstellt ein markiertes Testdokument.',
                 'Preveri obvezna polja – ne sprejema prejemnika ali sheme. Ustvari označen testni dokument.',
               ),
-              style: const TextStyle(color: Eq.muted, height: 1.45),
+              style: TextStyle(color: context.eq.muted, height: 1.45),
             ),
             const SizedBox(height: 16),
             if (widget.formats.isNotEmpty) ...[
@@ -644,7 +644,7 @@ class _IssueSheetState extends ConsumerState<_IssueSheet> {
                         showCheckmark: false,
                         selectedColor: Eq.violet,
                         labelStyle: TextStyle(
-                          color: _format == f ? Colors.white : Eq.ink2,
+                          color: _format == f ? Colors.white : context.eq.ink2,
                           fontWeight: FontWeight.w600,
                         ),
                         onSelected: (_) {
@@ -695,9 +695,9 @@ class _IssueSheetState extends ConsumerState<_IssueSheet> {
               else ...[
                 Text(
                   t('Das fehlt noch:', 'Še manjka:'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: Eq.ink2,
+                    color: context.eq.ink2,
                   ),
                 ),
                 const SizedBox(height: 8),

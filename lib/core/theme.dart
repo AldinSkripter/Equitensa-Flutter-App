@@ -56,12 +56,37 @@ class Eq {
 
 const _font = 'Inter';
 
-ThemeData buildTheme() {
+/// Semantic colors shared by every application surface. Documents keep their
+/// own paper palette so changing appearance never changes an invoice or PDF.
+class EqPalette {
+  const EqPalette(this.dark);
+  final bool dark;
+  static EqPalette of(BuildContext context) => EqPalette(Theme.of(context).brightness == Brightness.dark);
+  Color get ink => dark ? const Color(0xFFF3F0FA) : Eq.ink;
+  Color get ink2 => dark ? const Color(0xFFE8E1F4) : Eq.ink2;
+  Color get muted => dark ? const Color(0xFFB4ABBF) : Eq.muted;
+  Color get faint => dark ? const Color(0xFF968CA5) : const Color(0xFF80728D);
+  Color get page => dark ? const Color(0xFF111218) : Eq.page;
+  Color get bg => dark ? const Color(0xFF171820) : Eq.bg;
+  Color get surface => dark ? const Color(0xFF20212B) : Eq.surface;
+  Color get line => dark ? const Color(0xFF3C3749) : Eq.line;
+  Color get lineSoft => dark ? const Color(0xFF2E2B39) : Eq.lineSoft;
+  Color get violetSoft => dark ? const Color(0xFF332A48) : Eq.violetSoft;
+  Color get accent => dark ? const Color(0xFFC6B6FF) : Eq.violetDeep;
+  Color get error => dark ? const Color(0xFFFF9CB0) : const Color(0xFFB42344);
+}
+
+extension EquitensaColors on BuildContext {
+  EqPalette get eq => EqPalette.of(this);
+}
+
+ThemeData buildTheme({Brightness brightness = Brightness.light}) {
+  final palette = EqPalette(brightness == Brightness.dark);
   final scheme = ColorScheme.fromSeed(
     seedColor: Eq.violet,
     primary: Eq.violet,
-    surface: Eq.surface,
-    brightness: Brightness.light,
+    surface: palette.surface,
+    brightness: brightness,
   );
   const r12 = BorderRadius.all(Radius.circular(12));
   OutlineInputBorder border(Color c, [double w = 1]) => OutlineInputBorder(
@@ -69,42 +94,43 @@ ThemeData buildTheme() {
     borderSide: BorderSide(color: c, width: w),
   );
 
-  final base = Typography.material2021().black.apply(
+  final typography = Typography.material2021();
+  final base = (palette.dark ? typography.white : typography.black).apply(
     fontFamily: _font,
-    bodyColor: Eq.ink,
-    displayColor: Eq.ink,
+    bodyColor: palette.ink,
+    displayColor: palette.ink,
   );
 
   return ThemeData(
     useMaterial3: true,
     fontFamily: _font,
     colorScheme: scheme,
-    scaffoldBackgroundColor: Eq.page,
+    scaffoldBackgroundColor: palette.page,
     textTheme: base,
     splashFactory: InkSparkle.splashFactory,
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Eq.page,
-      foregroundColor: Eq.ink,
+    appBarTheme: AppBarTheme(
+      backgroundColor: palette.page,
+      foregroundColor: palette.ink,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Eq.surface,
+      fillColor: palette.surface,
       isDense: false,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
       border: border(const Color(0xFFDCD5E8)),
-      enabledBorder: border(const Color(0xFFDCD5E8)),
+      enabledBorder: border(palette.line),
       focusedBorder: border(Eq.violet, 1.6),
       errorBorder: border(Eq.danger),
       focusedErrorBorder: border(Eq.danger, 1.6),
-      hintStyle: const TextStyle(color: Eq.faint, fontWeight: FontWeight.w400),
-      labelStyle: const TextStyle(color: Eq.muted),
+      hintStyle: TextStyle(color: palette.faint, fontWeight: FontWeight.w400),
+      labelStyle: TextStyle(color: palette.muted),
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      backgroundColor: Eq.ink2,
+      backgroundColor: Eq.plum2,
       contentTextStyle: const TextStyle(
         fontFamily: _font,
         color: Colors.white,
@@ -112,19 +138,19 @@ ThemeData buildTheme() {
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
-    bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: Eq.surface,
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: palette.surface,
       showDragHandle: true,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
     ),
     dialogTheme: DialogThemeData(
-      backgroundColor: Eq.surface,
+      backgroundColor: palette.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
-    dividerTheme: const DividerThemeData(
-      color: Eq.lineSoft,
+    dividerTheme: DividerThemeData(
+      color: palette.lineSoft,
       space: 1,
       thickness: 1,
     ),

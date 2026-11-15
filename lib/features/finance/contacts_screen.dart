@@ -54,10 +54,10 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
               onChanged: (v) => setState(() => _q = v),
               decoration: InputDecoration(
                 hintText: t('Kontakt suchen', 'Poišči stik'),
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   LucideIcons.search,
                   size: 18,
-                  color: Eq.faint,
+                  color: context.eq.faint,
                 ),
               ),
             ),
@@ -106,10 +106,10 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
                                 c.name,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 15,
-                                  color: Eq.ink2,
+                                  color: context.eq.ink2,
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -120,8 +120,8 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
                                 ].where((e) => e.isNotEmpty).join(' · '),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Eq.muted,
+                                style: TextStyle(
+                                  color: context.eq.muted,
                                   fontSize: 13,
                                 ),
                               ),
@@ -130,7 +130,7 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
                         ),
                         Pill(
                           c.business ? t('Firma', 'Podjetje') : t('Privat', 'Zasebno'),
-                          color: c.business ? Eq.violet : Eq.muted,
+                          color: c.business ? Eq.violet : context.eq.muted,
                         ),
                       ],
                     ),
@@ -255,7 +255,7 @@ class _ContactFormScreenState extends ConsumerState<ContactFormScreen> {
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: Eq.violetSoft,
+                    color: context.eq.violetSoft,
                     borderRadius: BorderRadius.circular(13),
                   ),
                   child: Row(
@@ -280,7 +280,7 @@ class _ContactFormScreenState extends ConsumerState<ContactFormScreen> {
                                 label,
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
-                                  color: _business == b ? Eq.violet : Eq.muted,
+                                  color: _business == b ? Eq.violet : context.eq.muted,
                                 ),
                               ),
                             ),
@@ -372,11 +372,11 @@ class _ContactFormScreenState extends ConsumerState<ContactFormScreen> {
                           selectedColor: Eq.violet,
                           backgroundColor: Colors.white,
                           side: BorderSide(
-                            color: _country == c ? Eq.violet : Eq.line,
+                            color: _country == c ? Eq.violet : context.eq.line,
                           ),
                           labelStyle: TextStyle(
                             fontWeight: FontWeight.w700,
-                            color: _country == c ? Colors.white : Eq.ink2,
+                            color: _country == c ? Colors.white : context.eq.ink2,
                           ),
                           onSelected: (_) => setState(() => _country = c),
                         ),

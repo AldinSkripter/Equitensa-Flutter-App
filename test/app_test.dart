@@ -2,6 +2,9 @@ import 'dart:convert';
 
 import 'package:equitensa/app.dart';
 import 'package:equitensa/core/providers.dart';
+import 'package:equitensa/core/appearance.dart';
+import 'package:equitensa/core/theme.dart';
+import 'package:equitensa/core/ui.dart';
 import 'package:equitensa/data/api_client.dart';
 import 'package:equitensa/domain/models.dart';
 import 'package:equitensa/features/finance/invoice_sheet.dart';
@@ -11,6 +14,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+
+class MemoryAppearanceStore implements AppearanceStore {
+  MemoryAppearanceStore([this.value = 'light']);
+  String? value;
+  @override
+  Future<String?> read() async => value;
+  @override
+  Future<void> write(String mode) async {
+    value = mode;
+  }
+}
 
 // Shapes copied from real responses of the Equitensa backend (demo mode).
 const _contact = {
@@ -159,6 +173,36 @@ http.Client _fakeBackend({bool signedIn = false}) => MockClient((req) async {
         : jsonResponse({'error': 'AUTH_REQUIRED'}, 401);
   }
   if (path == '/api/finance') return jsonResponse(_financeJson(docs: [_doc()]));
+  if (path == '/api/analysis') {
+    return jsonResponse({
+      'year': 2026,
+      'analysis': {
+        'count': 20,
+        'male_count': 10,
+        'female_count': 10,
+        'other_count': 0,
+        'mean_gap': .08,
+        'median_gap': .06,
+        'groups': [],
+        'suppressed': false,
+      },
+    });
+  }
+  if (path == '/api/workflow') {
+    return jsonResponse({
+      'readiness': {
+        'percent': 20,
+        'ready': false,
+        'checks': [
+          {'id': 'profile', 'done': true},
+          {'id': 'categories', 'done': false},
+          {'id': 'import', 'done': false},
+          {'id': 'review', 'done': false},
+          {'id': 'release', 'done': false},
+        ],
+      },
+    });
+  }
   if (path == '/api/auth/login') {
     final b = jsonDecode(req.body) as Map;
     return b['password'] == 'correct-horse-battery'
@@ -176,6 +220,7 @@ Future<void> boot(WidgetTester t, {bool signedIn = false, http.Client? client}) 
     ProviderScope(
       retry: (_, _) => null,
       overrides: [
+        appearanceStoreProvider.overrideWithValue(MemoryAppearanceStore()),
         apiClientProvider.overrideWithValue(
           ApiClient(
             baseUrl: 'http://test',
@@ -301,6 +346,28 @@ void main() {
   });
 
   group('auth', () {
+    testWidgets('changing appearance keeps registration input and follows the system', (t) async {
+      await boot(t);
+      final container = ProviderScope.containerOf(t.element(find.byType(EquitensaApp)));
+      container.read(routerProvider).go('/register');
+      await t.pumpAndSettle();
+      await t.enterText(find.byType(TextField).first, 'My Company');
+      await t.tap(find.byType(AppearanceButton));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Dunkel').last);
+      await t.pumpAndSettle();
+      expect(container.read(appearanceProvider), ThemeMode.dark);
+      for (final mode in [ThemeMode.dark, ThemeMode.light, ThemeMode.system]) {
+        await container.read(appearanceProvider.notifier).set(mode);
+        await t.pumpAndSettle();
+        expect(t.widget<TextField>(find.byType(TextField).first).controller!.text, 'My Company');
+        expect(t.takeException(), isNull);
+      }
+      t.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+      addTearDown(t.platformDispatcher.clearPlatformBrightnessTestValue);
+      await t.pumpAndSettle();
+      expect(Theme.of(t.element(find.byType(TextField).first)).brightness, Brightness.dark);
+    });
     testWidgets('auth adapts to a narrow phone, keyboard and desktop', (t) async {
       await boot(t);
       t.view.devicePixelRatio = 1;
@@ -429,6 +496,65 @@ void main() {
   });
 
   group('signed-in app', () {
+    testWidgets('returning from the web refreshes server data without changing appearance', (t) async {
+      var financeReads = 0;
+      final backend = _fakeBackend(signedIn: true);
+      final client = MockClient((request) async {
+        if (request.url.path == '/api/finance') {
+          financeReads++;
+          final payload = _financeJson(docs: [_doc()]);
+          (payload['state'] as Map)['revision'] = financeReads > 1 ? 4 : 3;
+          return http.Response(jsonEncode(payload), 200, headers: {'content-type': 'application/json'});
+        }
+        return backend.get(request.url);
+      });
+      await boot(t, signedIn: true, client: client);
+      final container = ProviderScope.containerOf(t.element(find.byType(EquitensaApp)));
+      await container.read(appearanceProvider.notifier).set(ThemeMode.dark);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      for (var i = 0; i < 8; i++) {
+        await t.pump(const Duration(milliseconds: 200));
+      }
+      expect(container.read(financeProvider).value!.state.revision, 4);
+      expect(container.read(appearanceProvider), ThemeMode.dark);
+      expect(t.takeException(), isNull);
+    });
+
+    testWidgets('all native screens render in light and dark appearance', (t) async {
+      await boot(t, signedIn: true);
+      final container = ProviderScope.containerOf(t.element(find.byType(EquitensaApp)));
+      for (final mode in [ThemeMode.dark, ThemeMode.light]) {
+        await container.read(appearanceProvider.notifier).set(mode);
+        for (final route in [
+          '/finance',
+          '/finance/sales',
+          '/finance/contacts',
+          '/finance/expenses',
+          '/finance/contact',
+          '/finance/compose?kind=invoice',
+          '/finance/document/d1',
+          '/finance/company',
+          '/finance/plans',
+          '/account',
+          '/pay',
+          '/pay/report',
+          '/pay/categories',
+        ]) {
+          container.read(routerProvider).go(route);
+          for (var frame = 0; frame < 8; frame++) {
+            await t.pump(const Duration(milliseconds: 200));
+          }
+          expect(t.takeException(), isNull, reason: '$mode $route');
+          final scaffold = find.byType(Scaffold).last;
+          expect(
+            Theme.of(t.element(scaffold)).brightness,
+            mode == ThemeMode.dark ? Brightness.dark : Brightness.light,
+            reason: route,
+          );
+        }
+      }
+    });
     testWidgets('shows the Finance overview with the PAY/FINANCE switch', (
       t,
     ) async {
@@ -437,11 +563,35 @@ void main() {
       expect(find.text('PAY'), findsOneWidget);
       expect(find.text('Übersicht'), findsWidgets);
       final create = find.byTooltip('Neu erstellen');
+      final createButton = find.byWidgetPredicate(
+        (widget) => widget is IconButton && widget.tooltip == 'Neu erstellen',
+      );
+      expect(t.widget<IconButton>(createButton).style!.foregroundColor!.resolve({}), Colors.white);
       expect(t.getCenter(create).dx, closeTo(t.view.physicalSize.width / t.view.devicePixelRatio / 2, .5));
       await t.tap(create);
       await t.pump(const Duration(milliseconds: 500));
       expect(find.text('NEU ERSTELLEN'), findsOneWidget);
       expect(t.takeException(), isNull);
     });
+  });
+
+  testWidgets('completion percentage stays inside a properly sized ring', (t) async {
+    for (final dark in [false, true]) {
+      for (final percent in [0, 20, 100]) {
+        await t.pumpWidget(
+          MaterialApp(
+            theme: buildTheme(brightness: dark ? Brightness.dark : Brightness.light),
+            home: Scaffold(
+              body: Center(
+                child: CompletionRing(percent: percent, label: 'Fortschritt'),
+              ),
+            ),
+          ),
+        );
+        final progress = find.byType(CircularProgressIndicator);
+        expect(t.getSize(progress), const Size(68, 68));
+        expect(t.takeException(), isNull);
+      }
+    }
   });
 }
