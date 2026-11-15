@@ -7,6 +7,7 @@ import '../../core/i18n.dart';
 import '../../core/providers.dart';
 import '../../core/ui.dart';
 import '../workspace/workspace_widgets.dart';
+import 'pay_readiness.dart';
 
 const factors = ['skills', 'effort', 'responsibility', 'conditions'];
 const factorNames = ['Fähigkeiten', 'Belastung', 'Verantwortung', 'Arbeitsbedingungen'];
@@ -92,28 +93,45 @@ class PayWorkflowScreen extends ConsumerWidget {
 
         final readiness = object(data['readiness']);
         final categories = records(employer['categories']);
+        final anchors = {
+          for (final id in [...reportSteps, 'assessment']) id: GlobalKey(),
+        };
+        void goToStep(String id) {
+          if (id == 'export') {
+            context.push('/pay/exports');
+          } else if (id == 'data') {
+            context.push('/pay/import');
+          } else {
+            final target = anchors[id]?.currentContext;
+            if (target != null) {
+              Scrollable.ensureVisible(target, duration: const Duration(milliseconds: 400), alignment: 0.02);
+            } else {
+              context.push('/pay/import');
+            }
+          }
+        }
+
+        Widget section(String id, {String? description}) => ReportSectionStatus(
+          key: anchors[id],
+          title: reportStepTitle(id, t),
+          done: records(readiness['checks']).any((c) => c['id'] == id && c['done'] == true),
+          missing: records(readiness['missing']).where((m) => m['step'] == id).toList(),
+          description: description,
+          t: t,
+        );
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const YearSelector(),
             const SizedBox(height: 20),
-            EqCard(
-              child: Row(
-                children: [
-                  CompletionRing(
-                    percent: (readiness['percent'] as num? ?? 0).toInt(),
-                    label: t('Berichtsfortschritt', 'Napredek poro?ila'),
-                  ),
-                  const SizedBox(width: 18),
-                  Expanded(
-                    child: Text(
-                      t('Ihr Bericht entsteht Schritt für Schritt.', 'Vaše poročilo nastaja korak za korakom.'),
-                    ),
-                  ),
-                ],
+            ReportProgress(readiness: readiness, t: t, onStep: goToStep),
+            section(
+              'data',
+              description: t(
+                'Jahresdaten importieren oder aus monatlichen Abrechnungen abschließen.',
+                'Uvozite letne podatke ali jih zaključite iz mesečnih obračunov.',
               ),
             ),
-            const SizedBox(height: 20),
             entryCard(
               context,
               t('1 · Daten importieren', '1 · Uvoz podatkov'),
@@ -130,16 +148,31 @@ class PayWorkflowScreen extends ConsumerWidget {
                     'Nov podatkovni posnetek: ponovno preverite podatke in potrditve.',
                   ),
                 ),
+              section('profile'),
               entryCard(
                 context,
                 t('2 · Unternehmensprofil', '2 · Profil podjetja'),
                 object(workflow['profile'])['legalName']?.toString() ?? '',
                 onTap: () => editSection('profile', t('Unternehmensprofil', 'Profil podjetja'), profileInputs),
               ),
+              section(
+                'categories',
+                description: t(
+                  'Kriterien vereinbaren, Tätigkeiten vergleichen und die Bewertung mit Belegen dokumentieren.',
+                  'Dogovorite merila, primerjajte delovna mesta in dokumentirajte vrednotenje z dokazili.',
+                ),
+              ),
               entryCard(
                 context,
                 t('3 · Vereinbarung der Kriterien', '3 · Dogovor o merilih'),
-                object(workflow['criteriaAgreement'])['status']?.toString() ?? '',
+                switch (object(workflow['criteriaAgreement'])['status']) {
+                  'agreed' => t('Mit Vertretung vereinbart', 'Dogovorjeno s predstavniki'),
+                  'no_representatives' => t(
+                    'Keine Arbeitnehmervertretung dokumentiert',
+                    'Dokumentirana odsotnost predstavnikov',
+                  ),
+                  _ => t('Vereinbarung noch offen', 'Dogovor je še odprt'),
+                },
                 onTap: () => editSection('criteriaAgreement', t('Vereinbarung', 'Dogovor'), [
                   Input(
                     'status',
@@ -169,7 +202,11 @@ class PayWorkflowScreen extends ConsumerWidget {
               entryCard(
                 context,
                 t('Arbeitsbewertung · Methodik', 'Vrednotenje dela · metodologija'),
-                object(workflow['jobEvaluation'])['mode']?.toString() ?? '',
+                switch (object(workflow['jobEvaluation'])['mode']) {
+                  'documented' => t('Dokumentiertes Verfahren', 'Dokumentirana metoda'),
+                  'scored' => t('Punktebewertung', 'Točkovanje'),
+                  _ => t('Bewertungsmethode festlegen', 'Določite metodo vrednotenja'),
+                },
                 onTap: () => editSection('jobEvaluation', t('Arbeitsbewertung', 'Vrednotenje dela'), [
                   Input(
                     'mode',
@@ -261,7 +298,13 @@ class PayWorkflowScreen extends ConsumerWidget {
                 t('Kennzahlen und Gruppen vergleichen', 'Primerjajte kazalnike in skupine'),
                 onTap: () => context.push('/pay'),
               ),
-              SectionTitle(t('Unterschiede prüfen und Maßnahmen erfassen', 'Pregled razlik in ukrepov')),
+              section(
+                'reviews',
+                description: t(
+                  'Die erforderlichen Erklärungen und Maßnahmen ergeben sich aus der Serveranalyse.',
+                  'Zahtevana pojasnila in ukrepi izhajajo iz strežniške analize.',
+                ),
+              ),
               for (final category in categories)
                 entryCard(
                   context,
@@ -294,7 +337,21 @@ class PayWorkflowScreen extends ConsumerWidget {
                     ),
                   ]),
                 ),
-              SectionTitle(t('Gemeinsame Entgeltbewertung', 'Skupna ocena plač')),
+              ReportSectionStatus(
+                key: anchors['assessment'],
+                title: reportStepTitle('assessment', t),
+                done: object(readiness['assessment'])['ready'] == true,
+                missing: records(object(readiness['assessment'])['missing']),
+                t: t,
+                description: t(
+                  'Separate Vollständigkeitsprüfung für die gemeinsame Bewertung nach Art. 10. Der Berichtsstatus allein bestätigt diese Unterlagen nicht.',
+                  'Ločeno preverjanje popolnosti skupne ocene po členu 10. Stanje poročila samo ne potrjuje teh dokumentov.',
+                ),
+              ),
+              for (final assessment in records(readiness['assessments']))
+                NoticeBanner(
+                  '${assessment['category']} · ${assessment['jointAssessmentRequired'] == true ? t('Gemeinsame Bewertung erforderlich', 'Skupna ocena je obvezna') : t('Prüffrist laut Server', 'Rok za pregled po strežniku')}: ${assessment['deadline'] ?? t('Berichtsdatum ergänzen', 'Dopolnite datum poročanja')}',
+                ),
               entryCard(
                 context,
                 t('Frühere Maßnahmen und gemeinsame Prüfung', 'Prejšnji ukrepi in skupni pregled'),
@@ -346,6 +403,13 @@ class PayWorkflowScreen extends ConsumerWidget {
                     if (result != null) reload();
                   },
                 ),
+              section(
+                'approval',
+                description: t(
+                  'Änderungen an den Angaben können eine erneute Freigabe erfordern. Der Server prüft dies nach dem Speichern.',
+                  'Spremembe podatkov lahko zahtevajo ponovno potrditev. Strežnik to preveri po shranjevanju.',
+                ),
+              ),
               entryCard(
                 context,
                 t('5 · Freigabe', '5 · Potrditev'),
@@ -391,10 +455,18 @@ class PayWorkflowScreen extends ConsumerWidget {
                   if (result != null) reload();
                 },
               ),
-              for (final missing in records(readiness['missing']))
-                NoticeBanner(
-                  '${missing['step']} · ${missing['field']}${missing['category'] == null ? '' : ' · ${missing['category']}'}',
-                ),
+              const SizedBox(height: 20),
+              NoticeBanner(
+                readiness['ready'] == true
+                    ? t(
+                        'Die fünf Berichtsprüfungen sind abgeschlossen. Exportberechtigung, Empfänger und gemeinsame Bewertung werden separat geprüft. Ein Download ist keine automatische Einreichung.',
+                        'Pet preverjanj poročila je zaključenih. Pravica do izvoza, prejemnik in skupna ocena se preverjajo ločeno. Prenos ni samodejna oddaja.',
+                      )
+                    : t(
+                        'Noch nicht vollständig: Entwürfe können geprüft werden. Ein vorbereiteter Bericht bleibt an dieselben Freigaben und Paketbedingungen wie im Web gebunden.',
+                        'Še ni popolno: osnutke lahko pregledate. Pripravljeno poročilo zahteva iste potrditve in pogoje paketa kot v spletni aplikaciji.',
+                      ),
+              ),
               entryCard(
                 context,
                 t('6 · Berichte exportieren', '6 · Izvoz poročil'),
