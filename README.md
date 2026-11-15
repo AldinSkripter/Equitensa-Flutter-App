@@ -10,6 +10,26 @@ The Flutter version is pinned in [.fvmrc](./.fvmrc). Use FVM or a matching SDK
 when running the commands below. Android uses Gradle 9.5 and AGP 9.3.1.
 The temporary design compatibility bridge keeps the legacy chart dependency themed.
 
+## First run on a Mac / Xcode
+
+Close Xcode, pull the latest project, and double-click [Prepare iOS.command](./Prepare%20iOS.command).
+It uses the pinned Flutter SDK or downloads that SDK from the official Flutter repository
+into the user's cache. It prepares iOS artifacts, resolves plugins and regenerates local
+paths before opening the Xcode workspace. Xcode must be installed with first-launch setup
+completed and its Command Line Tools selected. Choose Runner and an iPhone Simulator, then Run.
+For a physical device, also configure your signing team and Developer Mode.
+
+If Finder cannot execute the launcher, run `bash "Prepare iOS.command"` from the project root.
+To point to a backend running on another computer, run
+`API_BASE=http://YOUR_HOST:3000 bash "Prepare iOS.command"` instead. The launcher does not start
+the backend. A simulator's localhost is the Mac; a real iPhone's localhost is the phone.
+
+An Xcode shell error 127 needs the preceding error line to diagnose. One possible cause
+after copying the Windows project is a generated Flutter configuration containing Windows
+SDK paths. The launcher rewrites those generated files; do not copy the Windows SDK or
+its generated configuration to the Mac. This preparation still requires a macOS build
+to validate iOS compilation and device behavior.
+
 ## Local backend
 
 Start the web backend on http://localhost:3000.
