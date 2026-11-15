@@ -302,7 +302,7 @@ class _Sheet extends StatelessWidget {
             [
               customer?.address.isNotEmpty == true ? customer!.address : _l('Beispielstraße 12', 'Vzorčna ulica 12'),
               '${customer?.postalCode ?? ''} ${customer?.city ?? ''}'.trim(),
-              customer?.country.code ?? country.code,
+              customer?.countryCode ?? country.code,
               customer?.vatId ?? '',
             ],
           ),
@@ -558,6 +558,8 @@ class _Sheet extends StatelessWidget {
       blocks('afterItems'),
       totals,
       if (d?.note.isNotEmpty == true) Text(d!.note, style: const TextStyle(fontSize: 9)),
+      if ('${d?.raw['taxNotice'] ?? ''}'.isNotEmpty)
+        Text(d!.raw['taxNotice'].toString(), style: const TextStyle(fontSize: 9)),
       blocks('closing'),
       footer,
       if (watermark)

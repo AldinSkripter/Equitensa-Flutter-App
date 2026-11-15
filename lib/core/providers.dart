@@ -12,6 +12,11 @@ final repositoryProvider = Provider<EquitensaRepository>(
   (ref) => EquitensaRepository(ref.watch(apiClientProvider)),
 );
 
+final workspaceBrandProvider = FutureProvider<Map<String, dynamic>>(
+  (ref) async =>
+      Map<String, dynamic>.from((await ref.watch(apiClientProvider).getJson('/company/brand'))['brand'] as Map? ?? {}),
+);
+
 /// Re-read shared web data without replaying mutations or replacing form input.
 Future<void> refreshWorkspace(WidgetRef ref) async {
   if (ref.read(sessionProvider).value == null) return;
@@ -19,6 +24,7 @@ Future<void> refreshWorkspace(WidgetRef ref) async {
   ref.invalidate(financeProvider);
   ref.invalidate(payAnalysisProvider);
   ref.invalidate(payReadinessProvider);
+  ref.invalidate(workspaceBrandProvider);
 }
 
 /// Authenticated user + company, or `null` when signed out. Restored from the cookie on start.
@@ -89,6 +95,7 @@ class SessionNotifier extends AsyncNotifier<Me?> {
   }
 
   void _resetData() {
+    ref.invalidate(workspaceBrandProvider);
     ref.invalidate(financeProvider);
     ref.invalidate(payAnalysisProvider);
     ref.invalidate(payReadinessProvider);
@@ -135,11 +142,28 @@ final languageProvider = Provider<String>((ref) {
 /// Whole Finance state of the company. Mutations replace it with the state the server returns.
 class FinanceNotifier extends AsyncNotifier<FinanceSnapshot> {
   @override
-  Future<FinanceSnapshot> build() => ref.read(repositoryProvider).finance();
+  Future<FinanceSnapshot> build() => _load();
+
+  Future<FinanceSnapshot> _load() async {
+    final repo = ref.read(repositoryProvider);
+    final snapshot = await repo.finance();
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final due = (snapshot.state.raw['recurring'] as List? ?? []).whereType<Map>().any(
+      (r) => r['autoOnOpen'] == true && r['paused'] != true && '${r['nextDate'] ?? '9999'}'.compareTo(today) <= 0,
+    );
+    if (!due) return snapshot;
+    try {
+      final result = await repo.financeAction('recurring/run', snapshot.state.revision, {'autoOnly': true});
+      return snapshot.withState(result.state);
+    } on ApiException catch (error) {
+      if (error.isConflict) return repo.finance();
+      rethrow;
+    }
+  }
 
   Future<void> reload() async {
     state = await AsyncValue.guard(
-      () => ref.read(repositoryProvider).finance(),
+      _load,
     );
   }
 
@@ -161,7 +185,13 @@ final financeProvider = AsyncNotifierProvider<FinanceNotifier, FinanceSnapshot>(
   FinanceNotifier.new,
 );
 
-final payYearProvider = Provider<int>((ref) => 2026);
+class PayYearController extends Notifier<int> {
+  @override
+  int build() => DateTime.now().year;
+  void set(int year) => state = year;
+}
+
+final payYearProvider = NotifierProvider<PayYearController, int>(PayYearController.new);
 
 final payAnalysisProvider = FutureProvider<PayAnalysis>(
   (ref) => ref.watch(repositoryProvider).payAnalysis(ref.watch(payYearProvider)),

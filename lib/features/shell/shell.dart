@@ -113,6 +113,7 @@ class _Stage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = me.company;
+    final brand = ref.watch(workspaceBrandProvider).value;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 450),
       curve: Curves.easeOutCubic,
@@ -143,7 +144,7 @@ class _Stage extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          c.name,
+                          brand?['displayName']?.toString() ?? c.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -553,6 +554,16 @@ class EqDrawer extends ConsumerWidget {
               t('Kategorien', 'Kategorije'),
               '/pay/categories',
             ),
+            (LucideIcons.chartColumn, t('Alle Kennzahlen', 'Vsi kazalniki'), '/pay/analysis'),
+            (LucideIcons.upload, t('Daten & Integrationen', 'Podatki in povezave'), '/pay/integrations'),
+            (LucideIcons.calendarDays, t('Monatliche Abrechnung', 'Mesečni obračun'), '/pay/payroll'),
+            (LucideIcons.users, t('Auskunftsrechte', 'Pravice do informacij'), '/pay/rights'),
+            (LucideIcons.slidersHorizontal, t('Entgeltkriterien', 'Merila za plače'), '/pay/criteria'),
+            (LucideIcons.shieldCheck, t('Arbeitgebernachweise', 'Dokazila delodajalca'), '/pay/obligations'),
+            (LucideIcons.fileText, t('Nationaler Bericht', 'Nacionalno poročilo'), '/pay/national'),
+            (LucideIcons.download, t('Berichte & Exporte', 'Poročila in izvozi'), '/pay/exports'),
+            (LucideIcons.lock, t('Datenschutz & Aufbewahrung', 'Zasebnost in hramba'), '/pay/retention'),
+            (LucideIcons.creditCard, t('Paket & Abrechnung', 'Paket in obračun'), '/pay/billing'),
           ]
         : [
             (
@@ -577,6 +588,13 @@ class EqDrawer extends ConsumerWidget {
               t('Firma & Design', 'Podjetje in izgled'),
               '/finance/company',
             ),
+            (LucideIcons.package, t('Artikel & Leistungen', 'Artikli in storitve'), '/finance/products'),
+            (LucideIcons.landmark, t('Bankabgleich', 'Bančna uskladitev'), '/finance/bank'),
+            (LucideIcons.repeat, t('Serienrechnungen', 'Ponavljajoči se računi'), '/finance/recurring'),
+            (LucideIcons.clock, t('Offene Forderungen', 'Odprte terjatve'), '/finance/receivables'),
+            (LucideIcons.folder, t('Dokumente', 'Dokumenti'), '/finance/documents'),
+            (LucideIcons.palette, t('Designbibliothek', 'Knjižnica izgledov'), '/finance/designs'),
+            (LucideIcons.download, t('Exporte & Aktivitäten', 'Izvozi in aktivnosti'), '/finance/exports'),
           ];
 
     return Drawer(
@@ -827,12 +845,14 @@ class EqDrawer extends ConsumerWidget {
             children: [
               Icon(icon, size: 19, color: on ? Colors.white : Eq.onPlumMuted),
               const SizedBox(width: 13),
-              Text(
-                label,
-                style: TextStyle(
-                  color: on ? Colors.white : Eq.onPlumMuted,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: on ? Colors.white : Eq.onPlumMuted,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ],

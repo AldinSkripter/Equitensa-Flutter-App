@@ -75,6 +75,11 @@ class AccountScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 10),
+          EqCard(
+            onTap: () => context.push('/account/brand'),
+            child: Text(t('Unternehmensauftritt verwalten', 'Upravljanje predstavitve podjetja')),
+          ),
+          const SizedBox(height: 10),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(

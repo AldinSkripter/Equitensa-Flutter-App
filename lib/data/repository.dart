@@ -70,6 +70,9 @@ class EquitensaRepository {
 
   Future<FinanceSnapshot> finance() async => FinanceSnapshot.fromJson(await api.getJson('/finance'));
 
+  Future<Mutation<Map<String, dynamic>>> financeAction(String path, int revision, Map<String, dynamic> body) async =>
+      _mutation(await api.postJson('/finance/$path', {...body, 'revision': revision}), (r) => r);
+
   Mutation<T> _mutation<T>(
     Map<String, dynamic> j,
     T Function(Map<String, dynamic>) result,

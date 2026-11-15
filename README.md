@@ -27,6 +27,17 @@ sessions use the backend cookie stored in OS secure storage. Web sessions use
 same-origin browser cookies. Live mobile authentication still needs the agreed
 HTTPS production configuration and mobile authentication contract.
 
+## Workspace features
+
+Native Pay now includes the import and report workflow, job evaluation, reviews, approvals,
+monthly payroll, information rights, pay criteria, national reports, employer evidence,
+integrations, retention and billing. Native Finance includes the product catalogue, bank CSV
+reconciliation, recurring drafts, receivables, document delivery records, original files,
+advanced designs and exports. Contacts use all 249 ISO recipient countries independently
+of the DE/AT/SI issuer markets.
+
+See [web feature inventory and backend limitations](./docs/web-parity.md).
+
 ## UI
 
 Original brand asset, native launch screens/app icons and bundled Inter font.

@@ -532,12 +532,18 @@ class PayCategoriesScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 18),
+          EqButton(
+            label: t('Kategorien und Bewertung bearbeiten', 'Uredi kategorije in vrednotenje'),
+            kind: BtnKind.secondary,
+            onPressed: () => context.push('/pay/report'),
+          ),
+          const SizedBox(height: 16),
           if (a.groups.isEmpty)
             StateMessageInline(
               icon: LucideIcons.layers,
               title: t('Keine Kategorien', 'Ni kategorij'),
               body: t(
-                'Importieren Sie Gehaltsdaten im Web, um Vergleichskategorien zu bilden.',
+                'Importieren Sie Gehaltsdaten, um Vergleichskategorien zu bilden.',
                 'Uvozite podatke o plačah v spletu za oblikovanje primerljivih kategorij.',
               ),
             )
@@ -547,211 +553,6 @@ class PayCategoriesScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: GroupTile(group: g),
               ),
-        ],
-      ),
-    );
-  }
-}
-
-class PayReportScreen extends ConsumerWidget {
-  const PayReportScreen({super.key});
-
-  static const _labels = {
-    'data': (
-      'Gehaltsdaten importiert',
-      'Podatki o plačah uvoženi',
-      'Daten wurden importiert und geprüft.',
-      'Podatki so uvoženi in preverjeni.',
-    ),
-    'profile': (
-      'Berichtsprofil',
-      'Profil poročila',
-      'Stichtag und Berichtsangaben festlegen.',
-      'Določite presečni datum in podatke poročila.',
-    ),
-    'categories': (
-      'Vergleichskategorien',
-      'Primerljive kategorije',
-      'Gleichwertige Tätigkeiten gruppieren.',
-      'Združite enakovredna dela.',
-    ),
-    'reviews': (
-      'Prüfungen & Erklärungen',
-      'Pregledi in pojasnila',
-      'Unterschiede begründen oder beheben.',
-      'Utemeljite ali odpravite razlike.',
-    ),
-    'approval': (
-      'Freigabe & Nachweis',
-      'Potrditev in dokazilo',
-      'Bericht freigeben und Nachweise sichern.',
-      'Potrdite poročilo in shranite dokazila.',
-    ),
-  };
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final t = trOf(ref);
-    return AsyncView<PayReadiness>(
-      value: ref.watch(payReadinessProvider),
-      onRefresh: () => _refresh(ref),
-      builder: (context, r) {
-        final firstOpen = r.checks.indexWhere((c) => !c.done);
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 130),
-          children: [
-            PageHeader(
-              kicker: 'Pay Transparency / ${ref.watch(countryProvider).code}',
-              title: t('Bericht vorbereiten', 'Priprava poročila'),
-              subtitle: t(
-                'Der Ablauf bis zur Freigabe – wie im Web.',
-                'Potek do potrditve – kot na spletu.',
-              ),
-            ),
-            const SizedBox(height: 18),
-            EqCard(
-              child: Row(
-                children: [
-                  CompletionRing(percent: r.percent, label: t('Fortschritt', 'Napredek')),
-                  const SizedBox(width: 18),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          r.ready ? t('Bericht bereit', 'Poročilo pripravljeno') : t('In Vorbereitung', 'V pripravi'),
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: context.eq.ink2,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${r.checks.where((c) => c.done).length} / ${r.checks.length} ${t('Schritte erledigt', 'korakov opravljenih')}',
-                          style: TextStyle(color: context.eq.muted),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SectionTitle(t('Ablauf', 'Potek')),
-            for (final (i, c) in r.checks.indexed)
-              _Step(
-                index: i,
-                done: c.done,
-                active: i == firstOpen,
-                last: i == r.checks.length - 1,
-                title: t(_labels[c.id]?.$1 ?? c.id, _labels[c.id]?.$2 ?? c.id),
-                body: t(_labels[c.id]?.$3 ?? '', _labels[c.id]?.$4 ?? ''),
-              ),
-            const SizedBox(height: 8),
-            NoticeBanner(
-              t(
-                'Berichtsprofil, Kategorien, Prüfungen und Freigabe schließen Sie derzeit im Web ab. Fortschritt und Ergebnisse sehen Sie hier in Echtzeit.',
-                'Profil poročila, kategorije, preglede in potrditev trenutno dokončate na spletu. Napredek in rezultate vidite tukaj.',
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _Step extends StatelessWidget {
-  const _Step({
-    required this.index,
-    required this.done,
-    required this.active,
-    required this.last,
-    required this.title,
-    required this.body,
-  });
-  final int index;
-  final bool done, active, last;
-  final String title, body;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = done
-        ? Eq.success
-        : active
-        ? Eq.violet
-        : context.eq.line;
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            width: 36,
-            child: Column(
-              children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: done || active ? color : Colors.transparent,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: color, width: 2),
-                  ),
-                  child: done
-                      ? const Icon(
-                          LucideIcons.check,
-                          size: 16,
-                          color: Colors.white,
-                        )
-                      : Center(
-                          child: Text(
-                            '${index + 1}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
-                              color: active ? Colors.white : context.eq.muted,
-                            ),
-                          ),
-                        ),
-                ),
-                if (!last)
-                  Expanded(
-                    child: Container(
-                      width: 2,
-                      color: done ? Eq.success.withValues(alpha: 0.4) : context.eq.line,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15.5,
-                      color: done || active ? context.eq.ink2 : context.eq.muted,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    body,
-                    style: TextStyle(
-                      color: context.eq.muted,
-                      fontSize: 13,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );

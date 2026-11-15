@@ -138,6 +138,11 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
           kicker: kindLabel(t, d.kind),
           title: d.number ?? t('Entwurf', 'Osnutek'),
           actions: [
+            IconButton(
+              tooltip: t('Weitere Aktionen', 'Dodatna dejanja'),
+              icon: const Icon(LucideIcons.ellipsis),
+              onPressed: () => context.push('/finance/manage-document/${d.id}'),
+            ),
             if (d.isDraft)
               GestureDetector(
                 onTap: () => context.push(

@@ -25,6 +25,11 @@ import 'features/finance/plans_screen.dart';
 import 'features/finance/receipt_screen.dart';
 import 'features/finance/sales_screen.dart';
 import 'features/pay/pay_screens.dart';
+import 'features/pay/pay_workflow.dart';
+import 'features/pay/pay_analysis_detail.dart';
+import 'features/pay/pay_import.dart';
+import 'features/pay/pay_modules.dart';
+import 'features/finance/finance_modules.dart';
 import 'features/shell/shell.dart';
 
 final launchReadyProvider = FutureProvider<void>((ref) => Future<void>.delayed(const Duration(milliseconds: 950)));
@@ -133,7 +138,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/pay/report',
-            pageBuilder: (_, s) => fade(s, const PayReportScreen()),
+            pageBuilder: (_, s) => fade(s, const PayWorkflowScreen()),
           ),
           GoRoute(
             path: '/pay/categories',
@@ -148,6 +153,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           ComposerScreen(
             kind: s.uri.queryParameters['kind'] ?? 'invoice',
             editId: s.uri.queryParameters['edit'],
+            contactId: s.uri.queryParameters['contact'],
+            productId: s.uri.queryParameters['product'],
           ),
         ),
       ),
@@ -177,6 +184,40 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/account',
         pageBuilder: (_, s) => slide(s, const AccountScreen()),
+      ),
+      GoRoute(path: '/pay/analysis', pageBuilder: (_, s) => slide(s, const PayAnalysisDetailScreen())),
+      GoRoute(path: '/account/brand', pageBuilder: (_, s) => slide(s, const WorkspaceBrandScreen())),
+      GoRoute(
+        path: '/pay/import',
+        pageBuilder: (_, s) => slide(s, PayImportScreen(batchId: s.uri.queryParameters['batch'])),
+      ),
+      for (final module in [
+        'exports',
+        'rights',
+        'criteria',
+        'obligations',
+        'national',
+        'payroll',
+        'integrations',
+        'retention',
+        'billing',
+      ])
+        GoRoute(
+          path: '/pay/$module',
+          pageBuilder: (_, s) => slide(s, PayModuleScreen(module: module)),
+        ),
+      for (final module in ['products', 'bank', 'recurring', 'receivables', 'exports', 'designs', 'documents', 'style'])
+        GoRoute(
+          path: '/finance/$module',
+          pageBuilder: (_, s) => slide(s, FinanceModuleScreen(module: module)),
+        ),
+      GoRoute(
+        path: '/finance/manage-document/:id',
+        pageBuilder: (_, s) => slide(s, FinanceModuleScreen(module: 'actions', id: s.pathParameters['id'])),
+      ),
+      GoRoute(
+        path: '/finance/expense/:id',
+        pageBuilder: (_, s) => slide(s, FinanceModuleScreen(module: 'expense', id: s.pathParameters['id'])),
       ),
       GoRoute(path: '/account/security', pageBuilder: (_, s) => slide(s, const SecurityScreen())),
     ],

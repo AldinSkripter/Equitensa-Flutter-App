@@ -10,6 +10,7 @@ import '../../core/ui.dart';
 import '../../domain/models.dart';
 import 'finance_common.dart';
 import 'sales_screen.dart';
+import 'contact_country_picker.dart';
 
 class ContactsScreen extends ConsumerStatefulWidget {
   const ContactsScreen({super.key});
@@ -161,7 +162,7 @@ class _ContactFormScreenState extends ConsumerState<ContactFormScreen> {
   final _email = TextEditingController();
   bool _business = true;
   bool _publicBody = false;
-  Country? _country;
+  String? _country;
   bool _loaded = false;
   bool _saving = false;
 
@@ -176,7 +177,7 @@ class _ContactFormScreenState extends ConsumerState<ContactFormScreen> {
   void _hydrate(FinanceSnapshot snap) {
     if (_loaded) return;
     _loaded = true;
-    _country = snap.state.country;
+    _country = snap.state.country.code;
     final c = snap.state.contacts.where((x) => x.id == widget.editId).firstOrNull;
     if (c != null) {
       _name.text = c.name;
@@ -187,7 +188,7 @@ class _ContactFormScreenState extends ConsumerState<ContactFormScreen> {
       _email.text = c.email;
       _business = c.business;
       _publicBody = c.publicBody;
-      _country = c.country;
+      _country = c.countryCode;
     }
   }
 
@@ -201,7 +202,7 @@ class _ContactFormScreenState extends ConsumerState<ContactFormScreen> {
       'city': _city.text.trim(),
       'vatId': _vat.text.trim().toUpperCase(),
       'email': _email.text.trim(),
-      'country': _country!.code,
+      'country': _country!,
       'business': _business,
       'publicBody': _publicBody,
     };
@@ -219,7 +220,13 @@ class _ContactFormScreenState extends ConsumerState<ContactFormScreen> {
     );
     if (!mounted) return;
     setState(() => _saving = false);
-    if (res != null) context.pop();
+    if (res != null) {
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/finance/contacts');
+      }
+    }
   }
 
   @override
@@ -241,6 +248,14 @@ class _ContactFormScreenState extends ConsumerState<ContactFormScreen> {
         return SubPage(
           kicker: 'Equitensa Finance',
           title: widget.editId == null ? t('Neuer Kontakt', 'Nov stik') : t('Kontakt bearbeiten', 'Uredi stik'),
+          actions: [
+            if (widget.editId != null)
+              IconButton(
+                tooltip: t('Dokument erstellen', 'Ustvari dokument'),
+                icon: const Icon(LucideIcons.filePlus),
+                onPressed: () => context.push('/finance/compose?kind=invoice&contact=${widget.editId}'),
+              ),
+          ],
           bottom: EqButton(
             label: t('Speichern', 'Shrani'),
             icon: LucideIcons.save,
@@ -340,7 +355,7 @@ class _ContactFormScreenState extends ConsumerState<ContactFormScreen> {
                     label: t('USt-IdNr.', 'Davčna številka za DDV'),
                     controller: _vat,
                     textCapitalization: TextCapitalization.characters,
-                    hint: '${_country?.code ?? ''}…',
+                    hint: '${_country ?? ''}…',
                   ),
                   const SizedBox(height: 6),
                   SwitchListTile(
@@ -358,29 +373,26 @@ class _ContactFormScreenState extends ConsumerState<ContactFormScreen> {
                 Labeled(
                   t('Land', 'Država'),
                   hint: t(
-                    'Rechnungen werden nur für inländische Kunden ausgestellt.',
-                    'Računi se izdajajo samo domačim strankam.',
+                    'Inländische Kunden oder EU-B2B-Dienstleistungen mit geprüften Steuerangaben.',
+                    'Domače stranke ali EU B2B storitve s preverjenimi davčnimi podatki.',
                   ),
-                  child: Wrap(
-                    spacing: 8,
-                    children: [
-                      for (final c in Country.values)
-                        ChoiceChip(
-                          label: Text('${c.flag} ${c.code}'),
-                          selected: _country == c,
-                          showCheckmark: false,
-                          selectedColor: Eq.violet,
-                          backgroundColor: Colors.white,
-                          side: BorderSide(
-                            color: _country == c ? Eq.violet : context.eq.line,
-                          ),
-                          labelStyle: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: _country == c ? Colors.white : context.eq.ink2,
-                          ),
-                          onSelected: (_) => setState(() => _country = c),
+                  child: EqCard(
+                    onTap: () async {
+                      final code = await chooseContactCountry(
+                        context,
+                        selected: _country ?? snap.state.country.code,
+                        sl: t.sl,
+                      );
+                      if (code != null && mounted) setState(() => _country = code);
+                    },
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text('${contactCountryName(_country ?? snap.state.country.code, t.sl)} · $_country'),
                         ),
-                    ],
+                        const Icon(LucideIcons.chevronDown, size: 18),
+                      ],
+                    ),
                   ),
                 ),
               ],

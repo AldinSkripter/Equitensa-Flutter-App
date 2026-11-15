@@ -204,6 +204,7 @@ class FinanceProfile {
 
 class Contact {
   const Contact({
+    this.registeredCountryCode,
     required this.id,
     required this.name,
     required this.address,
@@ -218,9 +219,12 @@ class Contact {
 
   final String id, name, address, postalCode, city, vatId, email;
   final Country country;
+  final String? registeredCountryCode;
+  String get countryCode => registeredCountryCode ?? country.code;
   final bool business, publicBody;
 
   factory Contact.fromJson(Json j) => Contact(
+    registeredCountryCode: _s(j['country']),
     id: _s(j['id']),
     name: _s(j['name']),
     address: _s(j['address']),
@@ -380,6 +384,7 @@ class Expense {
 
 class FinanceState {
   const FinanceState({
+    this.raw = const {},
     required this.revision,
     required this.country,
     required this.countryConfirmed,
@@ -391,6 +396,7 @@ class FinanceState {
   });
 
   final int revision;
+  final Json raw;
   final Country country;
   final bool countryConfirmed;
   final FinanceProfile profile;
@@ -403,6 +409,7 @@ class FinanceState {
   String? get planId => subscription == null ? null : _s(subscription!['plan']);
 
   factory FinanceState.fromJson(Json j) => FinanceState(
+    raw: j,
     revision: _i(j['revision']),
     country: Country.parse(j['country']),
     countryConfirmed: _b(j['countryConfirmed']),

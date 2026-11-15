@@ -8,10 +8,11 @@ import 'package:http/http.dart' as http;
 
 /// Failure reported by the Equitensa backend (`{error, fields}`) or the network.
 class ApiException implements Exception {
-  const ApiException(this.status, this.code, [this.fields = const []]);
+  const ApiException(this.status, this.code, [this.fields = const [], this.details = const {}]);
   final int status;
   final String code;
   final List<String> fields;
+  final Map<String, dynamic> details;
 
   bool get isOffline => status == 0;
   bool get isAuth => status == 401 && code == 'AUTH_REQUIRED';
@@ -116,14 +117,16 @@ class ApiClient {
   ApiException _error(http.Response r) {
     String code = 'HTTP_${r.statusCode}';
     var fields = <String>[];
+    var details = <String, dynamic>{};
     try {
       final j = jsonDecode(utf8.decode(r.bodyBytes));
       if (j is Map) {
+        details = Map<String, dynamic>.from(j);
         code = (j['error'] ?? code).toString();
         if (j['fields'] is List) fields = [for (final f in j['fields'] as List) f.toString()];
       }
     } catch (_) {}
-    final e = ApiException(r.statusCode, code, fields);
+    final e = ApiException(r.statusCode, code, fields, details);
     if (e.isAuth) onSessionLost?.call();
     return e;
   }
@@ -151,6 +154,12 @@ class ApiClient {
 
   Future<Uint8List> getBytes(String path) async {
     final r = await _send(() => _client.get(_uri(path), headers: _headers()));
+    if (r.statusCode >= 400) throw _error(r);
+    return r.bodyBytes;
+  }
+
+  Future<Uint8List> postBytes(String path, Map<String, dynamic> body) async {
+    final r = await _send(() => _client.post(_uri(path), headers: _headers(json: true), body: jsonEncode(body)));
     if (r.statusCode >= 400) throw _error(r);
     return r.bodyBytes;
   }

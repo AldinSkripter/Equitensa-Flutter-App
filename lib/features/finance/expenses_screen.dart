@@ -130,6 +130,7 @@ class ExpensesScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: EqCard(
+                    onTap: () => context.push('/finance/expense/${e.id}'),
                     padding: const EdgeInsets.all(14),
                     child: Row(
                       children: [

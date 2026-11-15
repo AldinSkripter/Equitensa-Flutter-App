@@ -14,6 +14,8 @@ import '../../data/api_client.dart';
 import '../../domain/models.dart';
 import 'finance_common.dart';
 import 'invoice_sheet.dart';
+import '../workspace/workspace_widgets.dart';
+import 'document_style.dart';
 
 class _LineForm {
   _LineForm({
@@ -57,9 +59,10 @@ class _LineForm {
 }
 
 class ComposerScreen extends ConsumerStatefulWidget {
-  const ComposerScreen({super.key, required this.kind, this.editId});
+  const ComposerScreen({super.key, required this.kind, this.editId, this.contactId, this.productId});
   final String kind;
   final String? editId;
+  final String? contactId, productId;
 
   @override
   ConsumerState<ComposerScreen> createState() => _ComposerScreenState();
@@ -75,6 +78,9 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
   final _note = TextEditingController();
   final List<_LineForm> _lines = [];
   Map<String, dynamic>? _appearance;
+  Data _einvoice = {};
+  String _taxTreatment = 'domestic';
+  Data _taxEvidence = {};
   int _tab = 0;
   bool _saving = false;
   bool _submitted = false;
@@ -100,6 +106,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
     _loaded = true;
     final country = snap.state.country;
     final unit = country == Country.si ? 'kos' : 'Stk.';
+    _contact = snap.state.contacts.where((c) => c.id == widget.contactId).firstOrNull;
     final id = widget.editId;
     if (id != null) {
       final d = snap.state.documents.where((x) => x.id == id).firstOrNull;
@@ -112,6 +119,9 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
         _reference.text = d.reference;
         _note.text = d.note;
         _appearance = d.appearance;
+        _einvoice = object(d.raw['einvoice']);
+        _taxTreatment = d.raw['taxTreatment']?.toString() ?? 'domestic';
+        _taxEvidence = object(d.raw['taxEvidence']);
         for (final l in d.lines) {
           _lines.add(
             _LineForm(
@@ -130,7 +140,17 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
         return;
       }
     }
-    _lines.add(_LineForm(unit: unit, rate: country.standardRate));
+    final product = records(snap.state.raw['products']).where((p) => p['id'] == widget.productId).firstOrNull;
+    _lines.add(
+      product == null
+          ? _LineForm(unit: unit, rate: country.standardRate)
+          : _LineForm(
+              description: product['name'].toString(),
+              unit: product['unit'].toString(),
+              price: product['unitPrice'].toString(),
+              rate: product['rate'].toString(),
+            ),
+    );
   }
 
   Map<String, dynamic> _body() => {
@@ -142,6 +162,9 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
     'reference': _reference.text.trim(),
     'note': _note.text.trim(),
     'appearance': _appearance,
+    'einvoice': _einvoice,
+    'taxTreatment': _taxTreatment,
+    'taxEvidence': _taxEvidence,
     'lines': [for (final l in _lines) l.toJson()],
   };
 
@@ -534,6 +557,23 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
           ),
         ),
         const SizedBox(height: 16),
+        EqButton(
+          kind: BtnKind.secondary,
+          label: t('Dokumentdesign anpassen', 'Prilagodi izgled dokumenta'),
+          onPressed: () async {
+            final result = await editData(
+              context,
+              title: t('Dokumentdesign', 'Izgled dokumenta'),
+              initial: {...snap.state.profile.raw, ...?_appearance},
+              fields: documentStyleFields,
+              save: (value) async {
+                setState(() => _appearance = value);
+                _schedule();
+              },
+            );
+            if (result != null && mounted) _schedule();
+          },
+        ),
         Labeled(
           t('Kunde', 'Stranka'),
           child: InkWell(
@@ -608,13 +648,115 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
                     () => _lines.add(
                       _LineForm(
                         unit: country == Country.si ? 'kos' : 'Stk.',
-                        rate: country.standardRate,
+                        rate: _taxTreatment == 'eu_b2b_services' ? '0' : country.standardRate,
                       ),
                     ),
                   );
                 },
         ),
+        const SizedBox(height: 12),
+        EqButton(
+          kind: BtnKind.secondary,
+          label: t('Aus Artikelkatalog hinzufügen', 'Dodaj iz kataloga'),
+          onPressed: _lines.length >= 100
+              ? null
+              : () async {
+                  final selected = await showModalBottomSheet<Data>(
+                    context: context,
+                    useSafeArea: true,
+                    builder: (c) => ListView(
+                      padding: const EdgeInsets.all(24),
+                      children: [
+                        for (final product in records(snap.state.raw['products']).where((p) => p['archived'] != true))
+                          ListTile(
+                            title: Text('${product['name']}'),
+                            subtitle: Text('${product['unitPrice']} EUR / ${product['unit']}'),
+                            onTap: () => Navigator.pop(c, product),
+                          ),
+                      ],
+                    ),
+                  );
+                  if (selected == null || !mounted) return;
+                  setState(
+                    () => _lines.add(
+                      _LineForm(
+                        description: selected['name'].toString(),
+                        unit: selected['unit'].toString(),
+                        price: selected['unitPrice'].toString(),
+                        rate: _taxTreatment == 'eu_b2b_services' ? '0' : selected['rate'].toString(),
+                      ),
+                    ),
+                  );
+                  _schedule();
+                },
+        ),
+        const SizedBox(height: 18),
+        DropdownButtonFormField<String>(
+          initialValue: _taxTreatment,
+          decoration: InputDecoration(labelText: t('Steuerbehandlung', 'Obravnava DDV')),
+          items: const [
+            DropdownMenuItem(value: 'domestic', child: Text('Inland / Domače')),
+            DropdownMenuItem(value: 'eu_b2b_services', child: Text('EU B2B · Reverse Charge')),
+          ],
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() {
+              _taxTreatment = value;
+              for (final line in _lines) {
+                line.rate = value == 'eu_b2b_services' ? '0' : country.standardRate;
+              }
+            });
+            _schedule();
+          },
+        ),
+        if (_taxTreatment == 'eu_b2b_services') ...[
+          const SizedBox(height: 16),
+          DataFields(
+            value: _taxEvidence,
+            fields: const [
+              Input(
+                'generalRuleConfirmed',
+                'EU-B2B-Dienstleistung und Leistungsort geprüft',
+                'Preverjena EU B2B storitev in kraj opravljanja',
+                kind: 'bool',
+              ),
+              Input(
+                'vatVerified',
+                'Umsatzsteuer-ID fachlich geprüft',
+                'Strokovno preverjena identifikacija DDV',
+                kind: 'bool',
+              ),
+              Input('reference', 'Prüfnachweis / Referenz', 'Dokazilo preverjanja / referenca'),
+              Input('checkedOn', 'Geprüft am (YYYY-MM-DD)', 'Preverjeno dne', kind: 'date'),
+            ],
+            onChanged: _schedule,
+          ),
+        ],
         _StepHeader('03', t('Die persönliche Note', 'Osebna nota')),
+        EqButton(
+          kind: BtnKind.secondary,
+          label: t('Gespeichertes Dokumentdesign wählen', 'Izberi shranjeni izgled dokumenta'),
+          onPressed: () async {
+            final selected = await showModalBottomSheet<Data>(
+              context: context,
+              useSafeArea: true,
+              builder: (c) => ListView(
+                padding: const EdgeInsets.all(24),
+                children: [
+                  for (final design in records(snap.state.raw['designs']))
+                    ListTile(
+                      title: Text('${design['name']}'),
+                      onTap: () => Navigator.pop(c, object(design['appearance'])),
+                    ),
+                ],
+              ),
+            );
+            if (selected == null || !mounted) return;
+            setState(() => _appearance = selected);
+            _schedule();
+          },
+        ),
+        const SizedBox(height: 16),
         EqField(
           label: t('Nachricht für dieses Dokument', 'Sporočilo za ta dokument'),
           controller: _note,
@@ -622,6 +764,47 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 18),
+        if (_kind == 'invoice') ...[
+          DataFields(
+            value: _einvoice,
+            fields: const [
+              Input('contactName', 'Ansprechpartner für E-Rechnung', 'Kontakt za e-račun'),
+              Input('contactPhone', 'Telefon für E-Rechnung', 'Telefon za e-račun'),
+            ],
+            onChanged: _schedule,
+          ),
+          NoticeBanner(
+            t(
+              'Strukturierter Testexport mit Backend-Validierung. Kein automatischer Versand.',
+              'Strukturiran testni izvoz s preverjanjem strežnika. Brez samodejnega pošiljanja.',
+            ),
+          ),
+          const SizedBox(height: 12),
+          PaymentQrAction(draft: _body),
+          const SizedBox(height: 12),
+          for (final format
+              in country == Country.de
+                  ? ['xrechnung', 'zugferd']
+                  : country == Country.at
+                  ? ['ebinterface', 'ubl']
+                  : ['eslog', 'ubl'])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: AsyncAction(
+                label: '${t('Testexport', 'Testni izvoz')} · $format',
+                action: () async {
+                  if (!_valid) throw StateError('FINANCE_INVALID_INPUT');
+                  await downloadFile(
+                    context,
+                    ref,
+                    '/finance/einvoice-preview',
+                    'TEST-$format.${format == 'zugferd' ? 'pdf' : 'xml'}',
+                    body: {..._body(), 'format': format},
+                  );
+                },
+              ),
+            ),
+        ],
         _totals(t, fmt),
       ],
     );
@@ -868,7 +1051,7 @@ class _ComposerScreenState extends ConsumerState<ComposerScreen> {
               spacing: 8,
               runSpacing: 6,
               children: [
-                for (final r in country.rates)
+                for (final r in _taxTreatment == 'eu_b2b_services' ? ['0'] : country.rates)
                   ChoiceChip(
                     label: Text('$r %'),
                     selected: l.rate == r,

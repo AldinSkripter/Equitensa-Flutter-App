@@ -11,6 +11,7 @@ import '../../core/theme.dart';
 import '../../core/ui.dart';
 import 'expenses_screen.dart';
 import 'finance_common.dart';
+import '../workspace/workspace_widgets.dart';
 
 enum _Stage { capture, scanning, review }
 
@@ -87,6 +88,21 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
           error: true,
         );
       }
+    }
+  }
+
+  Future<void> _pickFile() async {
+    try {
+      final file = await pickDocument(maxBytes: _maxBytes);
+      if (file == null || !mounted) return;
+      setState(() {
+        _bytes = file.bytes;
+        _filename = file.name;
+        _stage = _Stage.scanning;
+      });
+      await _scan();
+    } catch (error) {
+      if (mounted) showApiError(context, error);
     }
   }
 
@@ -266,6 +282,13 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
         icon: LucideIcons.image,
         onPressed: () => _capture(ImageSource.gallery),
       ),
+      const SizedBox(height: 10),
+      EqButton(
+        kind: BtnKind.secondary,
+        label: t('PDF, XML oder Bilddatei wählen', 'Izberi PDF, XML ali sliko'),
+        icon: LucideIcons.fileUp,
+        onPressed: _pickFile,
+      ),
       const SizedBox(height: 6),
       EqButton(
         kind: BtnKind.ghost,
@@ -283,7 +306,12 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
         if (_bytes != null)
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
-            child: Image.memory(_bytes!, height: 240, fit: BoxFit.cover),
+            child: Image.memory(
+              _bytes!,
+              height: 240,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => ListTile(leading: const Icon(LucideIcons.fileText), title: Text(_filename)),
+            ),
           ),
         const SizedBox(height: 28),
         const CircularProgressIndicator(),
@@ -308,6 +336,7 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
             height: 170,
             width: double.infinity,
             fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => ListTile(leading: const Icon(LucideIcons.fileText), title: Text(_filename)),
           ),
         ),
         const SizedBox(height: 12),
