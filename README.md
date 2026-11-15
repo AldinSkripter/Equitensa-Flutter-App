@@ -1,52 +1,50 @@
 # Equitensa Flutter App
 
-One Flutter app (iOS + Android) with **PAY** and **FINANCE** workspaces for the Equitensa platform.
-The app uses the same backend, company and records as the web app. It never computes
-authoritative totals, numbers or reports itself.
+Native Flutter app for the Equitensa PAY and FINANCE workspaces.
+Uses the same accounts, companies and API as the Equitensa web application.
 
-## Status
+## Toolchain
 
-First milestone, built against a **mock repository** because the backend has not yet delivered
-native auth (OAuth/PKCE) or an HTTPS staging environment (see the team handoff ZIP).
+Flutter **3.50.0**, Dart **3.14**, Material UI **1.11.0** and Cupertino UI **1.1.6**.
+The Flutter version is pinned in [.fvmrc](./.fvmrc). Use FVM or a matching SDK
+when running the commands below. Android uses Gradle 9.5 and AGP 9.3.1.
+The temporary design compatibility bridge keeps the legacy chart dependency themed.
 
-| Area | State |
-|---|---|
-| Brand, premium theme (violet `#7451f8`), PAY/FINANCE switch in the same place in both workspaces | done |
-| Company selection (DE / AT / SI), country from the company, DE/AT default German, SI default Slovenian, UI language override | done |
-| Locked modules explained, never purchased by switching | done |
-| Finance: overview + chart, invoices (filter, detail/preview), invoice editor with server-calculated totals, customers, expenses, packages | done (mock) |
-| Camera/gallery -> review -> upload -> expense (Business/Pro only) | done (mock OCR) |
-| Pay: overview (gap gauge, category chart, 5% flags), report workflow, categories | done (mock) |
-| Loading, empty, offline, denied, upgrade-required, validation and revision-conflict states | done |
-| Real HTTP adapter, secure token storage, PDF download/share, issue/delivery flow | pending backend contract |
+## Local backend
 
-## Architecture
+Start the web backend on http://localhost:3000.
+The iOS simulator uses localhost; the Android emulator uses 10.0.2.2:3000.
+For a physical device, supply the host address with --dart-define=API_BASE=http://YOUR_HOST:3000.
+Web previews require a same-origin /api proxy to that backend.
 
-```
-lib/
-  domain/    models + EquitensaRepository (the single seam to the backend)
-  data/      MockRepository (synthetic data, simulated latency/offline/conflict)
-  core/      theme, l10n (de/sl/en), providers (Riverpod), shared widgets
-  features/  auth, shell, finance, pay, account
-```
+## Authentication
 
-To go live, implement `EquitensaRepository` against the backend (`/api/v1` once agreed) and swap
-`repositoryProvider`. UI code does not change.
+Registration and login call /api/auth/register and /api/auth/login.
+The app restores /api/me, supports the email-verification gate, password reset,
+and the backend's authenticator/backup-code challenge. Native development
+sessions use the backend cookie stored in OS secure storage. Web sessions use
+same-origin browser cookies. Live mobile authentication still needs the agreed
+HTTPS production configuration and mobile authentication contract.
 
-Rules from the handoff that the code follows:
+## UI
 
-- Money is integer cents; quantity and entered prices are decimal strings.
-- Mutations carry the latest `state.revision`; a 409 shows a conflict dialog and keeps the user's input.
-- Retries are disabled (`ProviderScope(retry: ...)`); no blind replay of creates or payments.
-- No secrets, tokens or payroll data in source. Demo data is synthetic.
+Original brand asset, native launch screens/app icons and bundled Inter font.
+Three swipeable introduction pages with skip and login actions. Registration
+matches the web form: company first, business email, password, reporting country.
+Responsive graphite account screens, password visibility/strength, server errors,
+and floating Finance/Pay navigation with the create action centered between tabs.
+Pushed iOS pages support the native back gesture.
+Invoice rendering retains the web document templates and server totals.
 
-## Run
+## Validation
 
-```
-flutter pub get
-flutter run
-flutter analyze
-flutter test
-```
+- flutter analyze --no-pub
+- flutter test test/app_test.dart test/live_backend_test.dart
+- flutter build web --release --no-pub
+- flutter build apk --debug
 
-Account -> *Demo tools* simulates offline mode and a version conflict.
+iOS builds require macOS with Xcode and Apple signing configuration. The Android
+debug manifest allows the local HTTP backend; release configuration requires HTTPS.
+
+Live tests use localhost:3000 and skip if unavailable. The registration check only
+creates a synthetic account when /api/health reports demo mode.

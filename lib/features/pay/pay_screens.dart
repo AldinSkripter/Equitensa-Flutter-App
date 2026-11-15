@@ -1,158 +1,264 @@
-import 'dart:math' as math;
-
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../core/l10n.dart';
+import '../../core/i18n.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
-import '../../core/widgets.dart';
+import '../../core/ui.dart';
 import '../../domain/models.dart';
+import '../finance/sales_screen.dart';
 
 Future<void> _refresh(WidgetRef ref) async {
-  ref.invalidate(payOverviewProvider);
-  await ref.read(payOverviewProvider.future).catchError((_) => _none);
+  ref.invalidate(payAnalysisProvider);
+  ref.invalidate(payReadinessProvider);
+  try {
+    await ref.read(payAnalysisProvider.future);
+  } catch (_) {}
 }
-
-const _none = PayOverview(
-  employees: 0,
-  rawGapPercent: 0,
-  adjustedGapPercent: 0,
-  categories: [],
-  steps: [],
-);
 
 class PayOverviewScreen extends ConsumerWidget {
   const PayOverviewScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final s = S.of(context);
-    final lang = ref.watch(languageProvider);
+    final t = trOf(ref);
+    final fmt = fmtOf(ref);
+    final analysis = ref.watch(payAnalysisProvider);
+    final readiness = ref.watch(payReadinessProvider).value;
+    final year = ref.watch(payYearProvider);
 
-    return AsyncBody<PayOverview>(
-      value: ref.watch(payOverviewProvider),
+    return AsyncView<PayAnalysis>(
+      value: analysis,
       onRefresh: () => _refresh(ref),
       loading: ListView(
         physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.all(20),
         children: const [
-          Skeleton(height: 210, radius: 24),
+          Skeleton(height: 60),
           SizedBox(height: 16),
-          Skeleton(height: 240),
+          Skeleton(height: 260, radius: 26),
+          SizedBox(height: 16),
+          Skeleton(height: 140),
         ],
       ),
-      builder: (context, o) {
-        final flagged = o.categories.where((c) => c.flagged).toList();
+      builder: (context, a) {
+        final flagged = a.groups.where((g) => g.reviewRequired).toList();
         return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 130),
           children: [
+            PageHeader(
+              kicker: 'Pay Transparency / ${ref.watch(countryProvider).code}',
+              title: t('Klarheit beginnt hier.', 'Jasnost se začne tukaj.'),
+              subtitle: t(
+                'Ihr Bericht, Ihre Daten und die nächsten Schritte – auf einen Blick.',
+                'Vaše poročilo, vaši podatki in naslednji koraki – na prvi pogled.',
+              ),
+            ),
+            const SizedBox(height: 18),
             Container(
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF30223F), Color(0xFF4A2F7A)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(24),
+                gradient: Eq.heroGradient,
+                borderRadius: BorderRadius.circular(26),
                 boxShadow: [
                   BoxShadow(
-                    color: Brand.ink.withValues(alpha: 0.25),
-                    blurRadius: 28,
-                    offset: const Offset(0, 12),
+                    color: Eq.ink.withValues(alpha: 0.28),
+                    blurRadius: 34,
+                    offset: const Offset(0, 16),
                   ),
                 ],
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _Gauge(value: o.adjustedGapPercent),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          s.t('adjusted_gap'),
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.75),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${o.adjustedGapPercent.toStringAsFixed(1)}%',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 34,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${s.t('raw_gap')}: ${o.rawGapPercent.toStringAsFixed(1)}%',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.85),
-                          ),
-                        ),
-                        Text(
-                          '${o.employees} ${s.t('employees')}',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.85),
-                          ),
-                        ),
-                      ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.18),
+                      ),
+                    ),
+                    child: Text(
+                      '$year · ${t('ARBEITSBERICHT', 'DELOVNO POROČILO')}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                      ),
                     ),
                   ),
-                ],
-              ),
-            ),
-            SectionTitle(s.t('avg_pay_by_category')),
-            AppCard(
-              padding: const EdgeInsets.fromLTRB(12, 20, 16, 14),
-              child: Column(
-                children: [
-                  SizedBox(
-                    height: 210,
-                    child: _CategoryChart(categories: o.categories, lang: lang),
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _legend(const Color(0xFFD65FA5), s.t('women')),
-                      const SizedBox(width: 20),
-                      _legend(Brand.violet, s.t('men')),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              t(
+                                'Ihre Daten sind der Anfang.',
+                                'Vaši podatki so začetek.',
+                              ),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 26,
+                                height: 1.1,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -1,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              t(
+                                'Wir berechnen. Sie prüfen. Gemeinsam entsteht ein klarer Bericht.',
+                                'Mi izračunamo. Vi preverite. Skupaj nastane jasno poročilo.',
+                              ),
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.75),
+                                height: 1.45,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ProgressRing(
+                        value: (readiness?.percent ?? 0) / 100,
+                        size: 108,
+                        caption: t('vorbereitet', 'pripravljeno'),
+                      ),
                     ],
                   ),
+                  const SizedBox(height: 18),
+                  EqButton(
+                    label: t(
+                      'Nächsten Schritt öffnen',
+                      'Odpri naslednji korak',
+                    ),
+                    trailingIcon: LucideIcons.arrowRight,
+                    onPressed: () => context.go('/pay/report'),
+                  ),
                 ],
               ),
+            ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.05, end: 0),
+            const SizedBox(height: 14),
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.05,
+              children:
+                  [
+                        _Kpi(
+                          label: t(
+                            'Beschäftigte im Datenstand',
+                            'Zaposleni v podatkih',
+                          ),
+                          value: '${a.count}',
+                          note:
+                              '${a.female} ${t('Frauen', 'žensk')} · ${a.male} ${t('Männer', 'moških')} · ${a.other} ${t('Andere', 'drugi')}',
+                          icon: LucideIcons.users,
+                        ),
+                        _Kpi(
+                          label: t(
+                            'Mittlere Entgeltlücke',
+                            'Povprečna razlika',
+                          ),
+                          value: a.suppressed ? '—' : fmt.percent(a.meanGap),
+                          note: t(
+                            'Gesamtvergütung · pro Stunde',
+                            'Skupno plačilo · na uro',
+                          ),
+                          icon: LucideIcons.chartNoAxesCombined,
+                        ),
+                        _Kpi(
+                          label: t('Mediane Entgeltlücke', 'Mediana razlike'),
+                          value: a.suppressed ? '—' : fmt.percent(a.medianGap),
+                          note: t(
+                            'Gesamtvergütung · pro Stunde',
+                            'Skupno plačilo · na uro',
+                          ),
+                          icon: LucideIcons.scale,
+                        ),
+                        _Kpi(
+                          label: t(
+                            'Kategorien zur Prüfung',
+                            'Kategorije za pregled',
+                          ),
+                          value: '${a.reviewCount}',
+                          note: t(
+                            'Ab 5 % · keine automatische Diskriminierungsfeststellung',
+                            'Od 5 % · brez samodejne ugotovitve diskriminacije',
+                          ),
+                          icon: LucideIcons.circleAlert,
+                          accent: a.reviewCount > 0 ? Eq.warning : Eq.success,
+                        ),
+                      ].indexed
+                      .map(
+                        (e) => e.$2
+                            .animate()
+                            .fadeIn(
+                              delay: (120 + e.$1 * 70).ms,
+                              duration: 400.ms,
+                            )
+                            .slideY(begin: 0.1, end: 0),
+                      )
+                      .toList(),
             ),
-            SectionTitle(s.t('needs_attention')),
+            SectionTitle(
+              t('Entgeltlücke je Kategorie', 'Razlika po kategorijah'),
+            ),
+            EqCard(
+              padding: const EdgeInsets.fromLTRB(8, 22, 16, 12),
+              child: SizedBox(
+                height: 220,
+                child: _GapChart(groups: a.groups, fmt: fmt),
+              ),
+            ),
+            SectionTitle(t('Handlungsbedarf', 'Zahteva ukrepanje')),
             if (flagged.isEmpty)
-              AppCard(
+              EqCard(
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.check_circle_rounded,
-                      color: Brand.success,
-                    ),
+                    const Icon(LucideIcons.circleCheck, color: Eq.success),
                     const SizedBox(width: 12),
-                    Expanded(child: Text(s.t('no_flags'))),
+                    Expanded(
+                      child: Text(
+                        t(
+                          'Keine Kategorie überschreitet die 5-%-Schwelle.',
+                          'Nobena kategorija ne presega praga 5 %.',
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               )
             else
-              for (final c in flagged)
+              for (final g in flagged)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: CategoryTile(category: c),
+                  child: GroupTile(group: g),
                 ),
             const SizedBox(height: 4),
             Text(
-              s.t('threshold_note'),
+              t(
+                'Berechnung und Berichte erstellt ausschließlich das Backend – die App zeigt die Ergebnisse.',
+                'Izračune in poročila pripravi izključno strežnik – aplikacija prikaže rezultate.',
+              ),
               style: const TextStyle(
-                color: Brand.muted,
+                color: Eq.faint,
                 fontSize: 12.5,
                 height: 1.4,
               ),
@@ -162,100 +268,89 @@ class PayOverviewScreen extends ConsumerWidget {
       },
     );
   }
-
-  Widget _legend(Color c, String t) => Row(
-    children: [
-      Container(
-        width: 12,
-        height: 12,
-        decoration: BoxDecoration(
-          color: c,
-          borderRadius: BorderRadius.circular(4),
-        ),
-      ),
-      const SizedBox(width: 6),
-      Text(t, style: const TextStyle(fontSize: 13, color: Brand.muted)),
-    ],
-  );
 }
 
-class _Gauge extends StatelessWidget {
-  const _Gauge({required this.value});
-  final double value;
+class _Kpi extends StatelessWidget {
+  const _Kpi({
+    required this.label,
+    required this.value,
+    required this.note,
+    required this.icon,
+    this.accent = Eq.violet,
+  });
+  final String label, value, note;
+  final IconData icon;
+  final Color accent;
 
   @override
-  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
-    tween: Tween(begin: 0, end: (value / 10).clamp(0, 1)),
-    duration: const Duration(milliseconds: 1000),
-    curve: Curves.easeOutCubic,
-    builder: (_, v, _) => SizedBox(
-      width: 96,
-      height: 96,
-      child: CustomPaint(
-        painter: _GaugePainter(
-          v,
-          value >= 5 ? const Color(0xFFFFB04D) : const Color(0xFF6FE3B0),
+  Widget build(BuildContext context) => EqCard(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  color: Eq.muted,
+                  height: 1.25,
+                ),
+              ),
+            ),
+            Icon(icon, size: 16, color: accent),
+          ],
         ),
-        child: Center(
-          child: Icon(
-            value >= 5 ? Icons.priority_high_rounded : Icons.check_rounded,
-            color: Colors.white,
-            size: 34,
+        const Spacer(),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -1.2,
+              color: Eq.ink2,
+            ),
           ),
         ),
-      ),
+        const SizedBox(height: 4),
+        Text(
+          note,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 11.5, color: Eq.muted, height: 1.3),
+        ),
+      ],
     ),
   );
 }
 
-class _GaugePainter extends CustomPainter {
-  _GaugePainter(this.progress, this.color);
-  final double progress;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final track = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 10
-      ..strokeCap = StrokeCap.round
-      ..color = Colors.white.withValues(alpha: 0.15);
-    final arc = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 10
-      ..strokeCap = StrokeCap.round
-      ..color = color;
-    final r = rect.deflate(8);
-    canvas.drawArc(r, -math.pi / 2, math.pi * 2, false, track);
-    canvas.drawArc(r, -math.pi / 2, math.pi * 2 * progress, false, arc);
-  }
-
-  @override
-  bool shouldRepaint(_GaugePainter old) =>
-      old.progress != progress || old.color != color;
-}
-
-class _CategoryChart extends StatelessWidget {
-  const _CategoryChart({required this.categories, required this.lang});
-  final List<JobCategory> categories;
-  final String lang;
+class _GapChart extends StatelessWidget {
+  const _GapChart({required this.groups, required this.fmt});
+  final List<PayGroup> groups;
+  final Fmt fmt;
 
   @override
   Widget build(BuildContext context) {
-    final maxY =
-        categories.fold<int>(
-          0,
-          (m, c) => math.max(m, math.max(c.avgMenCents, c.avgWomenCents)),
-        ) *
-        1.15;
+    final shown = groups.where((g) => !g.suppressed).take(8).toList();
+    if (shown.isEmpty) return const Center(child: Text('—'));
+    final maxY = (shown.map((g) => g.gap.abs()).reduce((a, b) => a > b ? a : b) * 1.25).clamp(6.0, 100.0);
     return BarChart(
       BarChartData(
         maxY: maxY,
+        minY: 0,
         gridData: FlGridData(
           drawVerticalLine: false,
-          getDrawingHorizontalLine: (_) =>
-              const FlLine(color: Brand.border, strokeWidth: 1),
+          getDrawingHorizontalLine: (v) => FlLine(
+            color: v == 5 ? Eq.warning.withValues(alpha: 0.5) : Eq.lineSoft,
+            strokeWidth: v == 5 ? 1.4 : 1,
+            dashArray: v == 5 ? [5, 4] : null,
+          ),
+          horizontalInterval: 5,
         ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
@@ -264,46 +359,60 @@ class _CategoryChart extends StatelessWidget {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 46,
-              getTitlesWidget: (v, meta) => v == meta.max
-                  ? const SizedBox.shrink()
-                  : Text(
-                      fmtMoneyShort(v.round(), lang),
-                      style: const TextStyle(fontSize: 11, color: Brand.muted),
-                    ),
+              reservedSize: 40,
+              interval: 5,
+              getTitlesWidget: (v, meta) => Text(
+                '${v.toInt()} %',
+                style: const TextStyle(fontSize: 10.5, color: Eq.muted),
+              ),
             ),
           ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 28,
-              getTitlesWidget: (v, _) => Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  categories[v.toInt()].name.substring(0, 3),
-                  style: const TextStyle(fontSize: 11, color: Brand.muted),
-                ),
+              reservedSize: 30,
+              getTitlesWidget: (v, _) {
+                final name = shown[v.toInt()].category;
+                final short = name.split(' · ').last;
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    short.length > 5 ? short.substring(0, 5) : short,
+                    style: const TextStyle(fontSize: 10.5, color: Eq.muted),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        barTouchData: BarTouchData(
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipItem: (g, _, rod, _) => BarTooltipItem(
+              '${shown[g.x].category}\n${fmt.percent(rod.toY)}',
+              const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
               ),
             ),
           ),
         ),
         barGroups: [
-          for (var i = 0; i < categories.length; i++)
+          for (var i = 0; i < shown.length; i++)
             BarChartGroupData(
               x: i,
-              barsSpace: 4,
               barRods: [
                 BarChartRodData(
-                  toY: categories[i].avgWomenCents.toDouble(),
-                  width: 11,
-                  color: const Color(0xFFD65FA5),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                BarChartRodData(
-                  toY: categories[i].avgMenCents.toDouble(),
-                  width: 11,
-                  color: Brand.violet,
-                  borderRadius: BorderRadius.circular(4),
+                  toY: shown[i].gap.abs(),
+                  width: 20,
+                  borderRadius: BorderRadius.circular(7),
+                  gradient: LinearGradient(
+                    colors: shown[i].reviewRequired
+                        ? [const Color(0xFFFFB347), const Color(0xFFE0801A)]
+                        : [const Color(0xFFA48BFF), Eq.violet],
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                  ),
                 ),
               ],
             ),
@@ -313,16 +422,21 @@ class _CategoryChart extends StatelessWidget {
   }
 }
 
-class CategoryTile extends ConsumerWidget {
-  const CategoryTile({super.key, required this.category});
-  final JobCategory category;
+class GroupTile extends ConsumerWidget {
+  const GroupTile({super.key, required this.group});
+  final PayGroup group;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final s = S.of(context);
-    final c = category;
-    final color = c.flagged ? Brand.danger : Brand.success;
-    return AppCard(
+    final t = trOf(ref);
+    final fmt = fmtOf(ref);
+    final g = group;
+    final color = g.suppressed
+        ? Eq.muted
+        : g.reviewRequired
+        ? Eq.warning
+        : Eq.success;
+    return EqCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -330,42 +444,65 @@ class CategoryTile extends ConsumerWidget {
             children: [
               Expanded(
                 child: Text(
-                  c.name,
+                  g.category,
                   style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15.5,
+                    color: Eq.ink2,
                   ),
                 ),
               ),
               Pill(
-                '${c.gapPercent.toStringAsFixed(1)}%',
+                g.suppressed ? t('Unterdrückt', 'Skrito') : fmt.percent(g.gap),
                 color: color,
-                icon: c.flagged
-                    ? Icons.warning_amber_rounded
-                    : Icons.check_rounded,
+                icon: g.suppressed
+                    ? LucideIcons.eyeOff
+                    : g.reviewRequired
+                    ? LucideIcons.triangleAlert
+                    : LucideIcons.check,
               ),
             ],
           ),
           const SizedBox(height: 4),
           Text(
-            '${c.women} ${s.t('women')} · ${c.men} ${s.t('men')}',
-            style: const TextStyle(color: Brand.muted, fontSize: 13),
+            '${g.count} ${t('Beschäftigte', 'zaposlenih')} · ${g.female} ${t('Frauen', 'žensk')} · ${g.male} ${t('Männer', 'moških')}',
+            style: const TextStyle(color: Eq.muted, fontSize: 13),
           ),
           const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(99),
             child: LinearProgressIndicator(
-              minHeight: 8,
-              value: (c.gapPercent.abs() / 10).clamp(0, 1),
-              backgroundColor: Brand.border,
+              minHeight: 7,
+              value: g.suppressed ? 0 : (g.gap.abs() / 10).clamp(0, 1),
+              backgroundColor: Eq.lineSoft,
               color: color,
             ),
           ),
-          if (c.flagged) ...[
-            const SizedBox(height: 10),
+          if (g.suppressed) ...[
+            const SizedBox(height: 8),
             Text(
-              s.t('joint_assessment'),
-              style: const TextStyle(fontSize: 12.5, color: Brand.muted),
+              t(
+                'Gruppe zu klein – Kennzahlen werden zum Schutz kleiner Gruppen nicht angezeigt.',
+                'Skupina je premajhna – kazalniki se zaradi zaščite majhnih skupin ne prikažejo.',
+              ),
+              style: const TextStyle(
+                fontSize: 12.5,
+                color: Eq.muted,
+                height: 1.4,
+              ),
+            ),
+          ] else if (g.reviewRequired) ...[
+            const SizedBox(height: 8),
+            Text(
+              t(
+                'Ab 5 % ohne Begründung ist eine gemeinsame Entgeltbewertung erforderlich.',
+                'Od 5 % brez utemeljitve je potrebna skupna ocena plač.',
+              ),
+              style: const TextStyle(
+                fontSize: 12.5,
+                color: Eq.muted,
+                height: 1.4,
+              ),
             ),
           ],
         ],
@@ -379,21 +516,38 @@ class PayCategoriesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final s = S.of(context);
-    return AsyncBody<PayOverview>(
-      value: ref.watch(payOverviewProvider),
+    final t = trOf(ref);
+    return AsyncView<PayAnalysis>(
+      value: ref.watch(payAnalysisProvider),
       onRefresh: () => _refresh(ref),
-      isEmpty: (o) => o.categories.isEmpty,
-      empty: StateMessage(
-        icon: Icons.category_rounded,
-        title: s.t('empty_categories_title'),
-        body: s.t('empty_categories_body'),
-      ),
-      builder: (context, o) => ListView.separated(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-        itemCount: o.categories.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 10),
-        itemBuilder: (_, i) => CategoryTile(category: o.categories[i]),
+      builder: (context, a) => ListView(
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 130),
+        children: [
+          PageHeader(
+            kicker: 'Pay Transparency / ${ref.watch(countryProvider).code}',
+            title: t('Kategorien', 'Kategorije'),
+            subtitle: t(
+              'Vergleichbare Gruppen mit Entgeltlücke und Prüfhinweisen.',
+              'Primerljive skupine z razliko v plačah in opozorili za pregled.',
+            ),
+          ),
+          const SizedBox(height: 18),
+          if (a.groups.isEmpty)
+            StateMessageInline(
+              icon: LucideIcons.layers,
+              title: t('Keine Kategorien', 'Ni kategorij'),
+              body: t(
+                'Importieren Sie Gehaltsdaten im Web, um Vergleichskategorien zu bilden.',
+                'Uvozite podatke o plačah v spletu za oblikovanje primerljivih kategorij.',
+              ),
+            )
+          else
+            for (final g in a.groups)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: GroupTile(group: g),
+              ),
+        ],
       ),
     );
   }
@@ -402,66 +556,126 @@ class PayCategoriesScreen extends ConsumerWidget {
 class PayReportScreen extends ConsumerWidget {
   const PayReportScreen({super.key});
 
+  static const _labels = {
+    'data': (
+      'Gehaltsdaten importiert',
+      'Podatki o plačah uvoženi',
+      'Daten wurden importiert und geprüft.',
+      'Podatki so uvoženi in preverjeni.',
+    ),
+    'profile': (
+      'Berichtsprofil',
+      'Profil poročila',
+      'Stichtag und Berichtsangaben festlegen.',
+      'Določite presečni datum in podatke poročila.',
+    ),
+    'categories': (
+      'Vergleichskategorien',
+      'Primerljive kategorije',
+      'Gleichwertige Tätigkeiten gruppieren.',
+      'Združite enakovredna dela.',
+    ),
+    'reviews': (
+      'Prüfungen & Erklärungen',
+      'Pregledi in pojasnila',
+      'Unterschiede begründen oder beheben.',
+      'Utemeljite ali odpravite razlike.',
+    ),
+    'approval': (
+      'Freigabe & Nachweis',
+      'Potrditev in dokazilo',
+      'Bericht freigeben und Nachweise sichern.',
+      'Potrdite poročilo in shranite dokazila.',
+    ),
+  };
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final s = S.of(context);
-    return AsyncBody<PayOverview>(
-      value: ref.watch(payOverviewProvider),
+    final t = trOf(ref);
+    return AsyncView<PayReadiness>(
+      value: ref.watch(payReadinessProvider),
       onRefresh: () => _refresh(ref),
-      isEmpty: (o) => o.steps.isEmpty,
-      empty: StateMessage(
-        icon: Icons.fact_check_rounded,
-        title: s.t('empty_report_title'),
-        body: s.t('empty_report_body'),
-      ),
-      builder: (context, o) {
-        final done = o.steps.where((e) => e.status == StepStatus.done).length;
+      builder: (context, r) {
+        final firstOpen = r.checks.indexWhere((c) => !c.done);
         return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 130),
           children: [
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            PageHeader(
+              kicker: 'Pay Transparency / ${ref.watch(countryProvider).code}',
+              title: t('Bericht vorbereiten', 'Priprava poročila'),
+              subtitle: t(
+                'Der Ablauf bis zur Freigabe – wie im Web.',
+                'Potek do potrditve – kot na spletu.',
+              ),
+            ),
+            const SizedBox(height: 18),
+            EqCard(
+              child: Row(
                 children: [
-                  Text(
-                    s.t('report_progress'),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 17,
+                  SizedBox(
+                    width: 92,
+                    height: 92,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          value: r.percent / 100,
+                          strokeWidth: 8,
+                          strokeCap: StrokeCap.round,
+                          backgroundColor: Eq.violetSoft,
+                          color: Eq.violet,
+                        ),
+                        Text(
+                          '${r.percent}%',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: Eq.ink2,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(99),
-                    child: LinearProgressIndicator(
-                      minHeight: 10,
-                      value: done / o.steps.length,
-                      backgroundColor: Brand.border,
-                      color: Brand.violet,
+                  const SizedBox(width: 18),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          r.ready ? t('Bericht bereit', 'Poročilo pripravljeno') : t('In Vorbereitung', 'V pripravi'),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Eq.ink2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${r.checks.where((c) => c.done).length} / ${r.checks.length} ${t('Schritte erledigt', 'korakov opravljenih')}',
+                          style: const TextStyle(color: Eq.muted),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '$done / ${o.steps.length}',
-                    style: const TextStyle(color: Brand.muted),
                   ),
                 ],
               ),
             ),
-            SectionTitle(s.t('workflow')),
-            for (var i = 0; i < o.steps.length; i++)
-              _StepTile(
+            SectionTitle(t('Ablauf', 'Potek')),
+            for (final (i, c) in r.checks.indexed)
+              _Step(
                 index: i,
-                step: o.steps[i],
-                last: i == o.steps.length - 1,
+                done: c.done,
+                active: i == firstOpen,
+                last: i == r.checks.length - 1,
+                title: t(_labels[c.id]?.$1 ?? c.id, _labels[c.id]?.$2 ?? c.id),
+                body: t(_labels[c.id]?.$3 ?? '', _labels[c.id]?.$4 ?? ''),
               ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () => ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(SnackBar(content: Text(s.t('pdf_mock')))),
-              icon: const Icon(Icons.download_rounded),
-              label: Text(s.t('download_report')),
+            const SizedBox(height: 8),
+            NoticeBanner(
+              t(
+                'Berichtsprofil, Kategorien, Prüfungen und Freigabe schließen Sie derzeit im Web ab. Fortschritt und Ergebnisse sehen Sie hier in Echtzeit.',
+                'Profil poročila, kategorije, preglede in potrditev trenutno dokončate na spletu. Napredek in rezultate vidite tukaj.',
+              ),
             ),
           ],
         );
@@ -470,24 +684,26 @@ class PayReportScreen extends ConsumerWidget {
   }
 }
 
-class _StepTile extends StatelessWidget {
-  const _StepTile({
+class _Step extends StatelessWidget {
+  const _Step({
     required this.index,
-    required this.step,
+    required this.done,
+    required this.active,
     required this.last,
+    required this.title,
+    required this.body,
   });
   final int index;
-  final WorkflowStep step;
-  final bool last;
+  final bool done, active, last;
+  final String title, body;
 
   @override
   Widget build(BuildContext context) {
-    final s = S.of(context);
-    final (color, icon) = switch (step.status) {
-      StepStatus.done => (Brand.success, Icons.check_rounded),
-      StepStatus.active => (Brand.violet, Icons.more_horiz_rounded),
-      StepStatus.todo => (Brand.border, null),
-    };
+    final color = done
+        ? Eq.success
+        : active
+        ? Eq.violet
+        : Eq.line;
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -500,47 +716,59 @@ class _StepTile extends StatelessWidget {
                   width: 30,
                   height: 30,
                   decoration: BoxDecoration(
-                    color: step.status == StepStatus.todo
-                        ? Colors.transparent
-                        : color,
+                    color: done || active ? color : Colors.transparent,
                     shape: BoxShape.circle,
                     border: Border.all(color: color, width: 2),
                   ),
-                  child: icon != null
-                      ? Icon(icon, size: 18, color: Colors.white)
+                  child: done
+                      ? const Icon(
+                          LucideIcons.check,
+                          size: 16,
+                          color: Colors.white,
+                        )
                       : Center(
                           child: Text(
                             '${index + 1}',
-                            style: const TextStyle(
-                              color: Brand.muted,
+                            style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 12,
+                              color: active ? Colors.white : Eq.muted,
                             ),
                           ),
                         ),
                 ),
                 if (!last)
-                  Expanded(child: Container(width: 2, color: Brand.border)),
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      color: done ? Eq.success.withValues(alpha: 0.4) : Eq.line,
+                    ),
+                  ),
               ],
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 18),
+              padding: const EdgeInsets.only(bottom: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    s.t(step.key),
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15.5,
+                      color: done || active ? Eq.ink2 : Eq.muted,
+                    ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
-                    s.t('${step.key}_d'),
+                    body,
                     style: const TextStyle(
-                      color: Brand.muted,
+                      color: Eq.muted,
                       fontSize: 13,
-                      height: 1.35,
+                      height: 1.4,
                     ),
                   ),
                 ],

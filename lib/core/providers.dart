@@ -1,110 +1,163 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/mock_repository.dart';
+import '../data/api_client.dart';
+import '../data/repository.dart';
 import '../domain/models.dart';
-import '../domain/repository.dart';
 
-class DemoFlagsNotifier extends Notifier<DemoFlags> {
-  @override
-  DemoFlags build() => const DemoFlags();
-  void setOffline(bool v) => state = state.copyWith(offline: v);
-  void setConflict(bool v) => state = state.copyWith(conflict: v);
-}
-
-final demoFlagsProvider = NotifierProvider<DemoFlagsNotifier, DemoFlags>(
-  DemoFlagsNotifier.new,
-);
+final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
 
 final repositoryProvider = Provider<EquitensaRepository>(
-  (ref) => MockRepository(() => ref.read(demoFlagsProvider)),
+  (ref) => EquitensaRepository(ref.watch(apiClientProvider)),
 );
 
-class SessionNotifier extends Notifier<Company?> {
+/// Authenticated user + company, or `null` when signed out. Restored from the cookie on start.
+class SessionNotifier extends AsyncNotifier<Me?> {
   @override
-  Company? build() => null;
-
-  Future<void> signIn(String companyId) async {
-    final c = await ref.read(repositoryProvider).selectCompany(companyId);
-    state = c;
+  Future<Me?> build() async {
+    final api = ref.read(apiClientProvider);
+    api.onSessionLost = expire;
+    await api.restore();
+    try {
+      return await ref.read(repositoryProvider).me();
+    } on ApiException {
+      return null;
+    }
   }
 
-  Future<void> setPlan(FinancePlan plan) async {
-    await ref.read(repositoryProvider).setDemoPlan(plan);
-    state = state?.copyWith(plan: plan);
-    refreshFinance(ref);
+  EquitensaRepository get _repo => ref.read(repositoryProvider);
+
+  Future<void> login(String email, String password, {String? code}) async {
+    await _repo.login(email, password, code: code);
+    state = AsyncData(await _repo.me());
+    _resetData();
   }
 
-  void signOut() {
-    // Clears everything that belongs to the previous company.
-    state = null;
-    ref.invalidate(financeOverviewProvider);
-    ref.invalidate(contactsProvider);
-    ref.invalidate(invoicesProvider);
-    ref.invalidate(expensesProvider);
-    ref.invalidate(payOverviewProvider);
+  Future<void> register({
+    required String companyName,
+    required String email,
+    required String password,
+    required Country country,
+  }) async {
+    await _repo.register(
+      companyName: companyName,
+      email: email,
+      password: password,
+      country: country,
+    );
+    state = AsyncData(await _repo.me());
+    _resetData();
+  }
+
+  Future<void> startDemo(Country country) async {
+    await _repo.startDemo(country);
+    state = AsyncData(await _repo.me());
+    _resetData();
+  }
+
+  /// Re-reads the account, e.g. after the user confirmed the email link in their mail app.
+  Future<Me?> refresh() async {
+    final me = await _repo.me();
+    state = AsyncData(me);
+    return me;
+  }
+
+  Future<void> logout() async {
+    try {
+      await _repo.logout();
+    } on ApiException {
+      // The local session is dropped either way.
+    }
+    expire();
+  }
+
+  void expire() {
+    ref.read(apiClientProvider).clearSession();
+    state = const AsyncData(null);
+    _resetData();
+    ref.read(languageOverrideProvider.notifier).set(null);
+  }
+
+  void _resetData() {
+    ref.invalidate(financeProvider);
+    ref.invalidate(payAnalysisProvider);
+    ref.invalidate(payReadinessProvider);
   }
 }
 
-final sessionProvider = NotifierProvider<SessionNotifier, Company?>(
+final sessionProvider = AsyncNotifierProvider<SessionNotifier, Me?>(
   SessionNotifier.new,
 );
 
+/// Explicit UI-language choice. Never changes the company's country rules.
 class LanguageOverrideNotifier extends Notifier<String?> {
   @override
   String? build() => null;
   void set(String? lang) => state = lang;
 }
 
-/// Explicit UI-language choice. Never changes the company's country rules.
-final languageOverrideProvider =
-    NotifierProvider<LanguageOverrideNotifier, String?>(
-      LanguageOverrideNotifier.new,
-    );
+final languageOverrideProvider = NotifierProvider<LanguageOverrideNotifier, String?>(
+  LanguageOverrideNotifier.new,
+);
+
+/// Country picked on the auth screens before a company exists (language preview only).
+class AuthCountryNotifier extends Notifier<Country> {
+  @override
+  Country build() => Country.de;
+  void set(Country c) => state = c;
+}
+
+final authCountryProvider = NotifierProvider<AuthCountryNotifier, Country>(
+  AuthCountryNotifier.new,
+);
+
+final countryProvider = Provider<Country>((ref) {
+  final me = ref.watch(sessionProvider).value;
+  return me?.company.country ?? ref.watch(authCountryProvider);
+});
 
 final languageProvider = Provider<String>((ref) {
   final override = ref.watch(languageOverrideProvider);
   if (override != null) return override;
-  return ref.watch(sessionProvider.select((c) => c?.country.defaultLanguage)) ??
-      'de';
+  return ref.watch(countryProvider).language;
 });
 
-final companiesProvider = FutureProvider.autoDispose<List<Company>>(
-  (ref) => ref.watch(repositoryProvider).companies(),
-);
+/// Whole Finance state of the company. Mutations replace it with the state the server returns.
+class FinanceNotifier extends AsyncNotifier<FinanceSnapshot> {
+  @override
+  Future<FinanceSnapshot> build() => ref.read(repositoryProvider).finance();
 
-final financeOverviewProvider = FutureProvider.autoDispose<FinanceOverview>(
-  (ref) => ref.watch(repositoryProvider).financeOverview(),
-);
-final contactsProvider = FutureProvider.autoDispose<List<Contact>>(
-  (ref) => ref.watch(repositoryProvider).contacts(),
-);
-final invoicesProvider = FutureProvider.autoDispose<List<Invoice>>(
-  (ref) => ref.watch(repositoryProvider).invoices(),
-);
-final expensesProvider = FutureProvider.autoDispose<List<Expense>>(
-  (ref) => ref.watch(repositoryProvider).expenses(),
-);
-final payOverviewProvider = FutureProvider.autoDispose<PayOverview>(
-  (ref) => ref.watch(repositoryProvider).payOverview(),
-);
-
-void refreshFinance(Ref ref) {
-  ref.invalidate(financeOverviewProvider);
-  ref.invalidate(contactsProvider);
-  ref.invalidate(invoicesProvider);
-  ref.invalidate(expensesProvider);
-}
-
-extension WidgetRefRefresh on WidgetRef {
-  void refreshFinanceData() {
-    invalidate(financeOverviewProvider);
-    invalidate(contactsProvider);
-    invalidate(invoicesProvider);
-    invalidate(expensesProvider);
+  Future<void> reload() async {
+    state = await AsyncValue.guard(
+      () => ref.read(repositoryProvider).finance(),
+    );
   }
 
-  Future<int> latestRevision() async {
-    invalidate(financeOverviewProvider);
-    return (await read(financeOverviewProvider.future)).revision;
+  void apply(FinanceState s) {
+    final current = state.value;
+    if (current != null) state = AsyncData(current.withState(s));
+  }
+
+  /// Runs a mutation with the latest known revision and adopts the returned state.
+  Future<T> mutate<T>(Future<Mutation<T>> Function(int revision) run) async {
+    final revision = state.value?.state.revision ?? (await future).state.revision;
+    final m = await run(revision);
+    apply(m.state);
+    return m.result;
   }
 }
+
+final financeProvider = AsyncNotifierProvider<FinanceNotifier, FinanceSnapshot>(
+  FinanceNotifier.new,
+);
+
+final payYearProvider = Provider<int>((ref) => 2026);
+
+final payAnalysisProvider = FutureProvider<PayAnalysis>(
+  (ref) => ref.watch(repositoryProvider).payAnalysis(ref.watch(payYearProvider)),
+);
+
+final payReadinessProvider = FutureProvider<PayReadiness>(
+  (ref) => ref.watch(repositoryProvider).payReadiness(ref.watch(payYearProvider)),
+);

@@ -1,22 +1,24 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../core/l10n.dart';
+import '../../core/i18n.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
-import '../../core/widgets.dart';
-import '../../domain/models.dart';
-import 'conflict.dart';
+import '../../core/ui.dart';
+import 'expenses_screen.dart';
+import 'finance_common.dart';
 
 enum _Stage { capture, scanning, review }
 
-/// Camera/gallery -> review -> upload -> expense. Business/Pro only.
-/// Images are re-encoded as JPEG within the backend limits (<= 2,000,000 bytes, <= 2000px side here).
+/// Camera/gallery -> review -> upload -> expense. Images are sent as the same bytes as on web.
+/// Limits from the backend contract: JPEG/PNG <= 2,000,000 bytes, <= 6000 px; HEIC is converted by the picker.
 class ReceiptScreen extends ConsumerStatefulWidget {
-  const ReceiptScreen({super.key});
+  const ReceiptScreen({super.key, this.manual = false});
+  final bool manual;
 
   @override
   ConsumerState<ReceiptScreen> createState() => _ReceiptScreenState();
@@ -28,36 +30,44 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
   final _supplier = TextEditingController();
   final _reference = TextEditingController();
   final _amount = TextEditingController();
-  _Stage _stage = _Stage.capture;
+  final _note = TextEditingController();
+  late _Stage _stage = widget.manual ? _Stage.review : _Stage.capture;
   Uint8List? _bytes;
   String _filename = 'receipt.jpg';
-  DateTime _date = DateTime.now();
+  String _date = Fmt.today();
   String _category = 'office';
   bool _reviewed = false;
-  bool _uploading = false;
   bool _recognised = false;
+  bool _saving = false;
+  bool _submitted = false;
 
   @override
   void dispose() {
-    _supplier.dispose();
-    _reference.dispose();
-    _amount.dispose();
+    for (final c in [_supplier, _reference, _amount, _note]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
   Future<void> _capture(ImageSource source) async {
-    final s = S.of(context);
+    final t = trOf(ref);
     try {
       final file = await _picker.pickImage(
         source: source,
         maxWidth: 2000,
         maxHeight: 2000,
-        imageQuality: 80,
+        imageQuality: 82,
       );
       if (file == null) return;
       final bytes = await file.readAsBytes();
       if (bytes.length > _maxBytes) {
-        if (mounted) _snack(s.t('file_too_large'));
+        if (mounted) {
+          showSnack(
+            context,
+            t('Die Datei ist größer als 2 MB.', 'Datoteka je večja od 2 MB.'),
+            error: true,
+          );
+        }
         return;
       }
       setState(() {
@@ -67,157 +77,205 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
       });
       await _scan();
     } on PlatformException {
-      // Permission denied or no camera: offer manual entry without implying recognition.
-      if (mounted) _snack(s.t('camera_unavailable'));
+      if (mounted) {
+        showSnack(
+          context,
+          t(
+            'Kamera nicht verfügbar oder Berechtigung verweigert. Sie können manuell erfassen.',
+            'Kamera ni na voljo ali dovoljenje ni odobreno. Vnesete lahko ročno.',
+          ),
+          error: true,
+        );
+      }
     }
   }
 
   Future<void> _scan() async {
     try {
-      final r = await ref
-          .read(repositoryProvider)
-          .scanReceipt(_filename, _bytes!);
+      final r = await ref.read(repositoryProvider).scanReceipt(_filename, _bytes!);
       if (!mounted) return;
       setState(() {
         _supplier.text = r.supplier;
         _reference.text = r.reference;
-        _amount.text = (r.amountCents / 100).toStringAsFixed(2);
-        _date = r.incurredOn;
-        _category = r.category;
+        _amount.text = r.amount;
+        if (r.incurredOn.isNotEmpty) _date = r.incurredOn;
+        if (expenseCategories.contains(r.category)) _category = r.category;
+        _note.text = r.note;
         _recognised = true;
         _stage = _Stage.review;
       });
     } catch (e) {
       if (!mounted) return;
-      showError(context, e);
+      showApiError(context, e);
       setState(() {
-        _stage = _Stage.review;
         _recognised = false;
+        _stage = _Stage.review;
       });
     }
   }
 
-  void _manual() => setState(() {
-    _bytes = null;
-    _recognised = false;
-    _stage = _Stage.review;
-  });
-
-  void _snack(String m) => ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(m)));
-
-  Future<void> _upload() async {
-    final s = S.of(context);
+  Future<void> _save() async {
+    final t = trOf(ref);
     final amount = double.tryParse(_amount.text.replaceAll(',', '.'));
+    setState(() => _submitted = true);
+    final needsReview = _bytes != null && !_reviewed;
     if (_supplier.text.trim().isEmpty ||
+        _reference.text.trim().isEmpty ||
         amount == null ||
         amount <= 0 ||
-        !_reviewed) {
-      _snack(s.t('err_validation'));
+        needsReview) {
+      showSnack(
+        context,
+        t(
+          'Bitte prüfen Sie die markierten Angaben.',
+          'Preverite označene podatke.',
+        ),
+        error: true,
+      );
       return;
     }
-    setState(() => _uploading = true);
-    try {
-      final rev = await ref.latestRevision();
-      await ref
-          .read(repositoryProvider)
-          .importReceipt(
-            revision: rev,
-            filename: _filename,
-            reviewed: ReceiptSuggestion(
-              supplier: _supplier.text.trim(),
-              reference: _reference.text.trim(),
-              incurredOn: _date,
-              amountCents: (amount * 100).round(),
-              category: _category,
-            ),
-          );
-      ref.refreshFinanceData();
-      if (mounted) {
-        _snack(s.t('receipt_saved'));
-        context.pop();
-      }
-    } on VersionConflictException {
-      if (!mounted) return;
-      ref.refreshFinanceData();
-      final c = await showConflictDialog(context);
-      if (c == ConflictChoice.reloadAndRetry && mounted) {
-        setState(() => _uploading = false);
-        await _upload();
-        return;
-      }
-    } catch (e) {
-      if (mounted) showError(context, e);
-    } finally {
-      if (mounted) setState(() => _uploading = false);
+    setState(() => _saving = true);
+    final fields = {
+      'supplier': _supplier.text.trim(),
+      'reference': _reference.text.trim(),
+      'incurredOn': _date,
+      'amount': amount.toStringAsFixed(2),
+      'category': _category,
+      'note': _note.text.trim(),
+    };
+    final repo = ref.read(repositoryProvider);
+    final res = await guarded(
+      context,
+      ref,
+      () => ref
+          .read(financeProvider.notifier)
+          .mutate(
+            (rev) => _bytes == null
+                ? repo.createExpense(rev, fields)
+                : repo.importReceipt(
+                    revision: rev,
+                    filename: _filename,
+                    bytes: _bytes!,
+                    fields: fields,
+                  ),
+          ),
+    );
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (res != null) {
+      showSnack(context, t('Ausgabe gespeichert.', 'Strošek shranjen.'));
+      context.pop();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final s = S.of(context);
-    final plan = ref.watch(sessionProvider)?.plan;
-
-    return Scaffold(
-      appBar: AppBar(title: Text(s.t('scan_receipt'))),
-      body: plan?.hasExpenses != true
-          ? ErrorView(error: const PlanUpgradeException(), onRetry: () {})
+    final t = trOf(ref);
+    final snap = ref.watch(financeProvider).value;
+    final blocked = snap != null && !snap.hasFeature('expenses');
+    return SubPage(
+      kicker: 'Equitensa Finance',
+      title: t('Beleg erfassen', 'Zajem računa'),
+      bottom: _stage == _Stage.review && !blocked
+          ? EqButton(
+              label: t('Als Ausgabe speichern', 'Shrani kot strošek'),
+              icon: LucideIcons.check,
+              busy: _saving,
+              onPressed: _save,
+            )
+          : null,
+      child: blocked
+          ? StateMessage(
+              icon: LucideIcons.sparkles,
+              title: t('Im Paket nicht enthalten', 'Ni vključeno v paket'),
+              body: t(
+                'Belegerkennung ist ab dem Paket Business verfügbar.',
+                'Prepoznava računov je na voljo od paketa Business naprej.',
+              ),
+              actionLabel: t('Pakete ansehen', 'Poglej pakete'),
+              onAction: () => context.push('/finance/plans'),
+            )
           : AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 280),
               child: switch (_stage) {
-                _Stage.capture => _capturePane(s),
-                _Stage.scanning => _scanningPane(s),
-                _Stage.review => _reviewPane(s),
+                _Stage.capture => _capturePane(t),
+                _Stage.scanning => _scanning(t),
+                _Stage.review => _review(t),
               },
             ),
     );
   }
 
-  Widget _capturePane(S s) => ListView(
+  Widget _capturePane(Tr t) => ListView(
     key: const ValueKey('capture'),
-    padding: const EdgeInsets.all(24),
+    padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
     children: [
       Container(
-        height: 220,
+        height: 210,
         decoration: BoxDecoration(
-          gradient: Brand.financeGradient,
-          borderRadius: BorderRadius.circular(28),
+          gradient: Eq.heroGradient,
+          borderRadius: BorderRadius.circular(26),
         ),
-        child: const Icon(
-          Icons.document_scanner_rounded,
-          size: 84,
-          color: Colors.white,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 130,
+              height: 160,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.35),
+                  width: 1.5,
+                ),
+              ),
+            ),
+            const Icon(LucideIcons.scanLine, size: 54, color: Colors.white),
+          ],
         ),
       ),
-      const SizedBox(height: 24),
+      const SizedBox(height: 22),
       Text(
-        s.t('receipt_intro_title'),
-        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+        t('Beleg erfassen', 'Zajem računa'),
+        style: const TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.8,
+          color: Eq.ink2,
+        ),
       ),
       const SizedBox(height: 8),
       Text(
-        s.t('receipt_intro_body'),
-        style: const TextStyle(color: Brand.muted, height: 1.45),
+        t(
+          'Foto oder Datei hochladen. Die Erkennung ist nur ein Vorschlag – Aussteller, Datum und Betrag prüfen Sie selbst. Es erfolgt keine automatische Buchung oder Vorsteuerberechnung.',
+          'Naložite fotografijo ali datoteko. Prepoznava je le predlog – izdajatelja, datum in znesek preverite sami. Samodejnega knjiženja ali odbitka DDV ni.',
+        ),
+        style: const TextStyle(color: Eq.muted, height: 1.5),
       ),
-      const SizedBox(height: 24),
-      FilledButton.icon(
+      const SizedBox(height: 22),
+      EqButton(
+        label: t('Foto aufnehmen', 'Slikaj'),
+        icon: LucideIcons.camera,
         onPressed: () => _capture(ImageSource.camera),
-        icon: const Icon(Icons.photo_camera_rounded),
-        label: Text(s.t('take_photo')),
       ),
-      const SizedBox(height: 12),
-      OutlinedButton.icon(
+      const SizedBox(height: 10),
+      EqButton(
+        kind: BtnKind.secondary,
+        label: t('Aus Galerie wählen', 'Izberi iz galerije'),
+        icon: LucideIcons.image,
         onPressed: () => _capture(ImageSource.gallery),
-        icon: const Icon(Icons.photo_library_outlined),
-        label: Text(s.t('choose_file')),
       ),
-      const SizedBox(height: 12),
-      TextButton(onPressed: _manual, child: Text(s.t('enter_manually'))),
+      const SizedBox(height: 6),
+      EqButton(
+        kind: BtnKind.ghost,
+        label: t('Manuell erfassen', 'Vnesi ročno'),
+        onPressed: () => setState(() => _stage = _Stage.review),
+      ),
     ],
   );
 
-  Widget _scanningPane(S s) => Center(
+  Widget _scanning(Tr t) => Center(
     key: const ValueKey('scanning'),
     child: Column(
       mainAxisSize: MainAxisSize.min,
@@ -225,163 +283,176 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
         if (_bytes != null)
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
-            child: Image.memory(_bytes!, height: 220, fit: BoxFit.cover),
+            child: Image.memory(_bytes!, height: 240, fit: BoxFit.cover),
           ),
         const SizedBox(height: 28),
         const CircularProgressIndicator(),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
         Text(
-          s.t('scanning'),
-          style: const TextStyle(fontWeight: FontWeight.w700),
+          t('Beleg wird gelesen …', 'Branje računa …'),
+          style: const TextStyle(fontWeight: FontWeight.w600, color: Eq.ink2),
         ),
       ],
     ),
   );
 
-  Widget _reviewPane(S s) {
-    final lang = ref.watch(languageProvider);
-    return ListView(
-      key: const ValueKey('review'),
-      padding: const EdgeInsets.all(20),
-      children: [
-        if (_bytes != null)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Image.memory(
-              _bytes!,
-              height: 180,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
+  Widget _review(Tr t) => ListView(
+    key: const ValueKey('review'),
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+    children: [
+      if (_bytes != null) ...[
+        ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Image.memory(
+            _bytes!,
+            height: 170,
+            width: double.infinity,
+            fit: BoxFit.cover,
           ),
-        const SizedBox(height: 14),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: (_recognised ? Brand.violet : Brand.warning).withValues(
-              alpha: 0.1,
-            ),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                _recognised
-                    ? Icons.auto_awesome_rounded
-                    : Icons.edit_note_rounded,
-                color: _recognised ? Brand.violet : Brand.warning,
-                size: 20,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  s.t(_recognised ? 'review_hint' : 'manual_hint'),
-                  style: const TextStyle(fontSize: 13, height: 1.4),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 18),
-        TextField(
-          controller: _supplier,
-          decoration: InputDecoration(labelText: s.t('supplier')),
         ),
         const SizedBox(height: 12),
-        TextField(
-          controller: _reference,
-          decoration: InputDecoration(labelText: s.t('reference')),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _amount,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-                ],
-                decoration: InputDecoration(
-                  labelText: s.t('amount_gross'),
-                  suffixText: '€',
-                ),
+      ],
+      NoticeBanner(
+        _bytes == null
+            ? t(
+                'Manuelle Erfassung – es wurde nichts automatisch erkannt.',
+                'Ročni vnos – nič ni bilo samodejno prepoznano.',
+              )
+            : _recognised
+            ? t(
+                'Bitte prüfen: Die Erkennung kann Aussteller und Empfänger oder Rechnungs- und Fälligkeitsdatum verwechseln.',
+                'Preverite: prepoznava lahko zamenja izdajatelja in prejemnika ali datum računa in zapadlosti.',
+              )
+            : t(
+                'Nichts erkannt – bitte Angaben selbst eintragen.',
+                'Nič ni prepoznano – podatke vnesite sami.',
               ),
+        color: _recognised ? Eq.violet : Eq.warning,
+      ),
+      const SizedBox(height: 18),
+      EqField(
+        label: t('Lieferant', 'Dobavitelj'),
+        controller: _supplier,
+        validator: null,
+      ),
+      if (_submitted && _supplier.text.trim().isEmpty) _err(t('Pflichtfeld', 'Obvezno polje')),
+      const SizedBox(height: 14),
+      EqField(label: t('Belegnummer', 'Referenca'), controller: _reference),
+      if (_submitted && _reference.text.trim().isEmpty) _err(t('Pflichtfeld', 'Obvezno polje')),
+      const SizedBox(height: 14),
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: EqField(
+              label: t('Betrag (brutto)', 'Znesek (bruto)'),
+              controller: _amount,
+              suffixText: '€',
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              formatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Labeled(
+              t('Datum', 'Datum'),
               child: InkWell(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
                 onTap: () async {
                   final d = await showDatePicker(
                     context: context,
-                    initialDate: _date,
+                    initialDate: DateTime.tryParse(_date) ?? DateTime.now(),
                     firstDate: DateTime(2020),
                     lastDate: DateTime.now(),
                   );
-                  if (d != null) setState(() => _date = d);
+                  if (d != null) {
+                    setState(
+                      () => _date = d.toIso8601String().substring(0, 10),
+                    );
+                  }
                 },
                 child: InputDecorator(
-                  decoration: InputDecoration(labelText: s.t('date')),
+                  decoration: const InputDecoration(),
                   child: Text(
-                    fmtDate(_date, lang),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    _date,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 15,
+                    ),
                   ),
                 ),
               ),
             ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 14),
+      Labeled(
+        t('Kategorie', 'Kategorija'),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          children: [
+            for (final c in expenseCategories)
+              ChoiceChip(
+                avatar: Icon(
+                  categoryIcon(c),
+                  size: 15,
+                  color: _category == c ? Colors.white : Eq.muted,
+                ),
+                label: Text(categoryLabel(t, c)),
+                selected: _category == c,
+                showCheckmark: false,
+                selectedColor: Eq.violet,
+                backgroundColor: Colors.white,
+                side: BorderSide(color: _category == c ? Eq.violet : Eq.line),
+                labelStyle: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: _category == c ? Colors.white : Eq.ink2,
+                ),
+                onSelected: (_) => setState(() => _category = c),
+              ),
           ],
         ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          initialValue: _category,
-          decoration: InputDecoration(labelText: s.t('category')),
-          items: [
-            for (final c in const [
-              'office',
-              'software',
-              'travel',
-              'meals',
-              'other',
-            ])
-              DropdownMenuItem(value: c, child: Text(s.t('cat_$c'))),
-          ],
-          onChanged: (v) => setState(() => _category = v ?? _category),
-        ),
-        const SizedBox(height: 8),
+      ),
+      const SizedBox(height: 14),
+      EqField(label: t('Notiz', 'Opomba'), controller: _note, maxLines: 2),
+      if (_bytes != null) ...[
+        const SizedBox(height: 10),
         CheckboxListTile(
           contentPadding: EdgeInsets.zero,
           controlAffinity: ListTileControlAffinity.leading,
-          activeColor: Brand.violet,
+          activeColor: Eq.violet,
           value: _reviewed,
           onChanged: (v) => setState(() => _reviewed = v ?? false),
           title: Text(
-            s.t('confirm_reviewed'),
-            style: const TextStyle(fontSize: 14),
+            t(
+              'Ich habe die Angaben mit dem Originalbeleg geprüft.',
+              'Podatke sem preveril z izvirnim računom.',
+            ),
+            style: const TextStyle(fontSize: 14, height: 1.4),
           ),
-        ),
-        const SizedBox(height: 8),
-        FilledButton(
-          onPressed: _uploading ? null : _upload,
-          child: _uploading
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    color: Colors.white,
-                  ),
+          subtitle: _submitted && !_reviewed
+              ? Text(
+                  t('Bitte bestätigen', 'Prosimo, potrdite'),
+                  style: const TextStyle(color: Eq.danger, fontSize: 12.5),
                 )
-              : Text(s.t('upload_expense')),
+              : null,
         ),
         TextButton(
           onPressed: () => setState(() => _stage = _Stage.capture),
-          child: Text(s.t('retake')),
+          child: Text(t('Neu aufnehmen', 'Ponovno slikaj')),
         ),
       ],
-    );
-  }
+    ],
+  );
+
+  Widget _err(String m) => Padding(
+    padding: const EdgeInsets.only(top: 5, left: 4),
+    child: Text(m, style: const TextStyle(color: Eq.danger, fontSize: 12.5)),
+  );
 }

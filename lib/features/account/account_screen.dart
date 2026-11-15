@@ -1,47 +1,70 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../core/l10n.dart';
+import '../../core/i18n.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
-import '../../core/widgets.dart';
+import '../../core/ui.dart';
+import '../../data/api_client.dart';
+import '../finance/finance_common.dart';
 
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final s = S.of(context);
-    final company = ref.watch(sessionProvider);
-    if (company == null) return const SizedBox.shrink();
+    final t = trOf(ref);
+    final me = ref.watch(sessionProvider).value;
+    if (me == null) return const SizedBox.shrink();
     final override = ref.watch(languageOverrideProvider);
-    final flags = ref.watch(demoFlagsProvider);
+    final api = ref.watch(apiClientProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(s.t('account'))),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
+    return SubPage(
+      kicker: 'Equitensa',
+      title: t('Konto & Sicherheit', 'Račun in varnost'),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 32),
         children: [
-          AppCard(
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: Eq.heroGradient,
+              borderRadius: BorderRadius.circular(24),
+            ),
             child: Row(
               children: [
-                const BrandMark(size: 56),
+                const LogoMark(size: 56),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        company.name,
+                        me.company.name,
                         style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.4,
                         ),
                       ),
+                      const SizedBox(height: 3),
                       Text(
-                        '${company.country.flag} ${company.country.label} · ${company.city}',
-                        style: const TextStyle(color: Brand.muted),
+                        '${me.company.country.flag} ${me.company.country.label}',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        me.email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 12.5,
+                        ),
                       ),
                     ],
                   ),
@@ -49,84 +72,153 @@ class AccountScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
-              s.t('country_note'),
+              t(
+                'Das Land ist das registrierte Unternehmensland und bestimmt die Regeln. Die Sprache ändert daran nichts.',
+                'Država je registrirana država podjetja in določa pravila. Jezik tega ne spremeni.',
+              ),
               style: const TextStyle(
-                color: Brand.muted,
+                color: Eq.muted,
                 fontSize: 12.5,
-                height: 1.4,
+                height: 1.45,
               ),
             ),
           ),
-          SectionTitle(s.t('language')),
-          SegmentedButton<String?>(
-            showSelectedIcon: false,
-            segments: [
-              ButtonSegment(value: null, label: Text(s.t('lang_auto'))),
-              const ButtonSegment(value: 'de', label: Text('DE')),
-              const ButtonSegment(value: 'sl', label: Text('SL')),
-              const ButtonSegment(value: 'en', label: Text('EN')),
-            ],
-            selected: {override},
-            onSelectionChanged: (v) =>
-                ref.read(languageOverrideProvider.notifier).set(v.first),
+          SectionTitle(t('Sprache', 'Jezik')),
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Eq.violetSoft,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                for (final (v, label) in [
+                  (null as String?, t('Auto', 'Samodejno')),
+                  ('de', 'Deutsch'),
+                  ('sl', 'Slovenščina'),
+                ])
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => ref.read(languageOverrideProvider.notifier).set(v),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        height: 42,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: override == v ? Colors.white : Colors.transparent,
+                          borderRadius: BorderRadius.circular(11),
+                          boxShadow: override == v ? Eq.cardShadow : null,
+                        ),
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: override == v ? Eq.violet : Eq.muted,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
-          SectionTitle(s.t('workspace')),
-          _Tile(
-            icon: Icons.workspace_premium_rounded,
-            title: s.t('packages'),
-            subtitle: company.plan == null
-                ? s.t('not_activated')
-                : s.t('current_plan'),
-            onTap: () => context.push('/packages'),
+          SectionTitle(t('Sicherheit', 'Varnost')),
+          _Row(
+            LucideIcons.mailCheck,
+            t('E-Mail', 'E-pošta'),
+            me.emailVerified ? t('Bestätigt', 'Potrjeno') : t('Nicht bestätigt', 'Ni potrjeno'),
+            me.emailVerified ? Eq.success : Eq.warning,
           ),
           const SizedBox(height: 10),
-          _Tile(
-            icon: Icons.shield_outlined,
-            title: s.t('security'),
-            subtitle: s.t('security_hint'),
-            onTap: () => ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(SnackBar(content: Text(s.t('auth_pending')))),
+          _Row(
+            LucideIcons.fingerprint,
+            t('Zwei-Faktor-Anmeldung', 'Dvostopenjska prijava'),
+            me.mfaEnabled ? t('Aktiv', 'Aktivno') : t('Im Web einrichten', 'Nastavite na spletu'),
+            me.mfaEnabled ? Eq.success : Eq.muted,
           ),
-          SectionTitle(s.t('demo_tools')),
-          AppCard(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-            child: Column(
+          const SizedBox(height: 10),
+          EqCard(
+            onTap: () => _passwordSheet(context, ref),
+            child: Row(
               children: [
-                SwitchListTile(
-                  value: flags.offline,
-                  activeThumbColor: Brand.violet,
-                  title: Text(s.t('sim_offline')),
-                  onChanged: (v) =>
-                      ref.read(demoFlagsProvider.notifier).setOffline(v),
+                const Icon(LucideIcons.keyRound, color: Eq.violet, size: 20),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    t('Passwort ändern', 'Spremeni geslo'),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: Eq.ink2,
+                    ),
+                  ),
                 ),
-                const Divider(),
-                SwitchListTile(
-                  value: flags.conflict,
-                  activeThumbColor: Brand.violet,
-                  title: Text(s.t('sim_conflict')),
-                  onChanged: (v) =>
-                      ref.read(demoFlagsProvider.notifier).setConflict(v),
+                const Icon(LucideIcons.chevronRight, size: 18, color: Eq.faint),
+              ],
+            ),
+          ),
+          SectionTitle(t('Verbindung', 'Povezava')),
+          EqCard(
+            child: Row(
+              children: [
+                Container(
+                  width: 9,
+                  height: 9,
+                  decoration: const BoxDecoration(
+                    color: Eq.success,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        api.baseUrl.isEmpty
+                            ? t(
+                                'Gleicher Server wie Web',
+                                'Isti strežnik kot splet',
+                              )
+                            : api.baseUrl,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Eq.ink2,
+                        ),
+                      ),
+                      Text(
+                        me.demo
+                            ? t(
+                                'Lokale Demo-Umgebung · synthetische Daten',
+                                'Lokalno demo okolje · sintetični podatki',
+                              )
+                            : t('Verbunden', 'Povezano'),
+                        style: const TextStyle(color: Eq.muted, fontSize: 12.5),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(foregroundColor: Brand.danger),
-            onPressed: () {
-              ref.read(languageOverrideProvider.notifier).set(null);
-              ref.read(demoFlagsProvider.notifier)
-                ..setOffline(false)
-                ..setConflict(false);
-              ref.read(sessionProvider.notifier).signOut();
+          const SizedBox(height: 10),
+          NoticeBanner(
+            t(
+              'Entwicklungs-Anmeldung per Web-Sitzung. Die native Anmeldung (OAuth/PKCE) folgt, sobald das Backend sie bereitstellt.',
+              'Razvojna prijava prek spletne seje. Nativna prijava (OAuth/PKCE) sledi, ko jo strežnik zagotovi.',
+            ),
+          ),
+          const SizedBox(height: 22),
+          EqButton(
+            kind: BtnKind.danger,
+            label: t('Abmelden', 'Odjava'),
+            icon: LucideIcons.logOut,
+            onPressed: () async {
+              await ref.read(sessionProvider.notifier).logout();
             },
-            icon: const Icon(Icons.logout_rounded),
-            label: Text(s.t('logout')),
           ),
         ],
       ),
@@ -134,39 +226,122 @@ class AccountScreen extends ConsumerWidget {
   }
 }
 
-class _Tile extends StatelessWidget {
-  const _Tile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
+class _Row extends StatelessWidget {
+  const _Row(this.icon, this.title, this.value, this.color);
   final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
+  final String title, value;
+  final Color color;
 
   @override
-  Widget build(BuildContext context) => AppCard(
-    onTap: onTap,
+  Widget build(BuildContext context) => EqCard(
     child: Row(
       children: [
-        Icon(icon, color: Brand.violet),
+        Icon(icon, color: Eq.violet, size: 20),
         const SizedBox(width: 14),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-              Text(
-                subtitle,
-                style: const TextStyle(color: Brand.muted, fontSize: 13),
-              ),
-            ],
+          child: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w700, color: Eq.ink2),
           ),
         ),
-        const Icon(Icons.chevron_right_rounded, color: Brand.muted),
+        Pill(value, color: color),
       ],
+    ),
+  );
+}
+
+Future<void> _passwordSheet(BuildContext context, WidgetRef ref) {
+  final t = trOf(ref);
+  final current = TextEditingController();
+  final next = TextEditingController();
+  var busy = false;
+  String? error;
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setS) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          0,
+          20,
+          20 + MediaQuery.viewInsetsOf(ctx).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              t('Passwort ändern', 'Spremeni geslo'),
+              style: const TextStyle(
+                fontSize: 21,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.5,
+                color: Eq.ink2,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              t(
+                'Andere Geräte werden danach abgemeldet.',
+                'Druge naprave bodo nato odjavljene.',
+              ),
+              style: const TextStyle(color: Eq.muted),
+            ),
+            const SizedBox(height: 18),
+            EqField(
+              label: t('Aktuelles Passwort', 'Trenutno geslo'),
+              controller: current,
+              obscure: true,
+            ),
+            const SizedBox(height: 14),
+            EqField(
+              label: t('Neues Passwort', 'Novo geslo'),
+              controller: next,
+              obscure: true,
+              helper: t('Mindestens 12 Zeichen', 'Vsaj 12 znakov'),
+            ),
+            if (error != null) ...[
+              const SizedBox(height: 12),
+              NoticeBanner(error!, color: Eq.danger),
+            ],
+            const SizedBox(height: 18),
+            EqButton(
+              label: t('Passwort speichern', 'Shrani geslo'),
+              busy: busy,
+              onPressed: () async {
+                if (next.text.length < 12) {
+                  setS(
+                    () => error = t('Mindestens 12 Zeichen.', 'Vsaj 12 znakov.'),
+                  );
+                  return;
+                }
+                setS(() {
+                  busy = true;
+                  error = null;
+                });
+                try {
+                  await ref.read(apiClientProvider).postJson('/auth/password', {
+                    'password': current.text,
+                    'newPassword': next.text,
+                  });
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx);
+                    showSnack(
+                      context,
+                      t('Passwort geändert.', 'Geslo spremenjeno.'),
+                    );
+                  }
+                } on ApiException catch (e) {
+                  setS(() => error = errorMessage(t, e));
+                } finally {
+                  if (ctx.mounted) setS(() => busy = false);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
     ),
   );
 }
