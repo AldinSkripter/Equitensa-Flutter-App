@@ -10,6 +10,7 @@ import 'core/providers.dart';
 import 'core/appearance.dart';
 import 'core/theme.dart';
 import 'features/account/account_screen.dart';
+import 'features/account/security_screen.dart';
 import 'features/auth/auth_pages.dart';
 import 'features/auth/auth_widgets.dart';
 import 'features/auth/register_page.dart';
@@ -79,7 +80,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/splash', builder: (_, _) => const SplashPage()),
       ShellRoute(
-        builder: (_, _, child) => AuthFrame(child: child),
+        builder: (_, state, child) => AuthFrame(intro: state.uri.path == '/welcome', child: child),
         routes: [
           GoRoute(
             path: '/welcome',
@@ -177,6 +178,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/account',
         pageBuilder: (_, s) => slide(s, const AccountScreen()),
       ),
+      GoRoute(path: '/account/security', pageBuilder: (_, s) => slide(s, const SecurityScreen())),
     ],
   );
 });

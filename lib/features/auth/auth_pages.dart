@@ -158,7 +158,7 @@ Future<void> _demoSheet(BuildContext context, WidgetRef ref) {
   final t = trOf(ref);
   return showModalBottomSheet<void>(
     context: context,
-    backgroundColor: const Color(0xFF1B1430),
+    backgroundColor: context.eq.surface,
     builder: (ctx) => SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(22, 0, 22, 22),
@@ -389,19 +389,17 @@ class _BackRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Align(
     alignment: Alignment.centerLeft,
-    child: GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-        ),
-        child: const Icon(LucideIcons.arrowLeft, size: 18, color: Colors.white),
+    child: IconButton.outlined(
+      tooltip: 'Zurück / Nazaj',
+      onPressed: onTap,
+      style: IconButton.styleFrom(
+        foregroundColor: context.eq.ink,
+        backgroundColor: context.eq.surface,
+        side: BorderSide(color: context.eq.line),
+        minimumSize: const Size(46, 46),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
+      icon: const Icon(LucideIcons.arrowLeft, size: 19),
     ),
   );
 }

@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/i18n.dart';
@@ -140,8 +141,20 @@ class AccountScreen extends ConsumerWidget {
           _Row(
             LucideIcons.fingerprint,
             t('Zwei-Faktor-Anmeldung', 'Dvostopenjska prijava'),
-            me.mfaEnabled ? t('Aktiv', 'Aktivno') : t('Im Web einrichten', 'Nastavite na spletu'),
+            me.mfaEnabled ? t('Aktiv', 'Aktivno') : t('Nicht eingerichtet', 'Ni nastavljeno'),
             me.mfaEnabled ? Eq.success : context.eq.muted,
+          ),
+          const SizedBox(height: 10),
+          EqCard(
+            onTap: () => context.push('/account/security'),
+            child: Row(
+              children: [
+                const Icon(LucideIcons.shieldCheck, color: Eq.violet, size: 20),
+                const SizedBox(width: 14),
+                Expanded(child: Text(t('Zwei-Faktor-Anmeldung verwalten', 'Upravljaj dvostopenjsko prijavo'))),
+                Icon(LucideIcons.chevronRight, size: 18, color: context.eq.faint),
+              ],
+            ),
           ),
           const SizedBox(height: 10),
           EqCard(

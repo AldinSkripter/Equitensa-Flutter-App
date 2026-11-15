@@ -21,7 +21,8 @@ Web previews require a same-origin /api proxy to that backend.
 
 Registration and login call /api/auth/register and /api/auth/login.
 The app restores /api/me, supports the email-verification gate, password reset,
-and the backend's authenticator/backup-code challenge. Native development
+and the backend's authenticator/backup-code challenge. Account security supports
+native QR enrollment, activation, one-time recovery-code display and disabling 2FA. Native development
 sessions use the backend cookie stored in OS secure storage. Web sessions use
 same-origin browser cookies. Live mobile authentication still needs the agreed
 HTTPS production configuration and mobile authentication contract.
@@ -35,7 +36,9 @@ Responsive graphite account screens, password visibility/strength, server errors
 and floating Finance/Pay navigation with the create action centered between tabs.
 Pushed iOS pages support the native back gesture.
 
-Appearance supports light, dark and system modes, with the preference saved locally.
+Appearance offers explicit light and dark modes, with the preference saved locally.
+The header toggles appearance directly; the language menu offers German and Slovenian
+without changing the registered reporting country.
 Switch it from the auth header, workspace header or Account settings. Documents
 retain their paper colors in both modes. Returning to the app and pull-to-refresh
 re-read shared backend data without replaying mutations.

@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'i18n.dart';
+import 'theme.dart';
 
 abstract interface class AppearanceStore {
   Future<String?> read();
@@ -28,20 +29,21 @@ class AppearanceController extends Notifier<ThemeMode> {
   @override
   ThemeMode build() {
     unawaited(_restore(ref.read(appearanceStoreProvider), _revision));
-    return ThemeMode.system;
+    return ThemeMode.light;
   }
 
   Future<void> _restore(AppearanceStore store, int revision) async {
     try {
       final value = await store.read();
       if (!ref.mounted || revision != _revision) return;
-      state = ThemeMode.values.firstWhere((mode) => mode.name == value, orElse: () => ThemeMode.system);
+      state = value == 'dark' ? ThemeMode.dark : ThemeMode.light;
     } catch (_) {
       /* An unavailable keychain never blocks the app. */
     }
   }
 
   Future<void> set(ThemeMode mode) async {
+    mode = mode == ThemeMode.dark ? ThemeMode.dark : ThemeMode.light;
     _revision++;
     state = mode;
     final store = ref.read(appearanceStoreProvider);
@@ -64,34 +66,24 @@ class AppearanceButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = trOf(ref);
     final mode = ref.watch(appearanceProvider);
-    return PopupMenuButton<ThemeMode>(
-      tooltip: t('Darstellung', 'Videz'),
-      initialValue: mode,
-      icon: Icon(
-        mode == ThemeMode.system
-            ? LucideIcons.monitor
-            : mode == ThemeMode.dark
-            ? LucideIcons.moon
-            : LucideIcons.sun,
-        size: 18,
+    final dark = mode == ThemeMode.dark;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: IconButton.outlined(
+        tooltip: dark ? t('Light Mode', 'Svetli način') : t('Dark Mode', 'Temni način'),
+        onPressed: () => ref.read(appearanceProvider.notifier).set(dark ? ThemeMode.light : ThemeMode.dark),
+        style: IconButton.styleFrom(
+          minimumSize: const Size(44, 44),
+          backgroundColor: context.eq.surface,
+          foregroundColor: context.eq.accent,
+          side: BorderSide(color: context.eq.line),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        icon: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Icon(dark ? LucideIcons.sun : LucideIcons.moon, key: ValueKey(dark), size: 18),
+        ),
       ),
-      onSelected: (value) => ref.read(appearanceProvider.notifier).set(value),
-      itemBuilder: (_) => [
-        for (final option in [
-          (ThemeMode.system, t('System', 'Sistem')),
-          (ThemeMode.light, t('Hell', 'Svetlo')),
-          (ThemeMode.dark, t('Dunkel', 'Temno')),
-        ])
-          PopupMenuItem(
-            value: option.$1,
-            child: Row(
-              children: [
-                Expanded(child: Text(option.$2)),
-                if (mode == option.$1) const Icon(LucideIcons.check, size: 16),
-              ],
-            ),
-          ),
-      ],
     );
   }
 }
@@ -105,18 +97,13 @@ class AppearanceSelector extends ConsumerWidget {
       showSelectedIcon: false,
       segments: [
         ButtonSegment(
-          value: ThemeMode.system,
-          label: Text(t('System', 'Sistem')),
-          icon: const Icon(LucideIcons.monitor, size: 16),
-        ),
-        ButtonSegment(
           value: ThemeMode.light,
-          label: Text(t('Hell', 'Svetlo')),
+          label: Text(t('Light', 'Svetlo')),
           icon: const Icon(LucideIcons.sun, size: 16),
         ),
         ButtonSegment(
           value: ThemeMode.dark,
-          label: Text(t('Dunkel', 'Temno')),
+          label: Text(t('Dark', 'Temno')),
           icon: const Icon(LucideIcons.moon, size: 16),
         ),
       ],

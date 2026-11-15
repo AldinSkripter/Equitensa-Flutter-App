@@ -345,8 +345,111 @@ void main() {
     }
   });
 
+  testWidgets('native security enrollment uses the backend and acknowledges recovery codes', (t) async {
+    var enabled = false;
+    final fallback = _fakeBackend(signedIn: true);
+    final calls = <String>[];
+    final client = MockClient((request) async {
+      final path = request.url.path;
+      if (path == '/api/auth/security') {
+        return http.Response(
+          jsonEncode({'mfaEnabled': enabled, 'hasPassword': false, 'backupCodesLeft': enabled ? 10 : 0}),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+      if (path.startsWith('/api/auth/mfa/')) {
+        calls.add(path);
+        final input = jsonDecode(request.body) as Map;
+        if (path.endsWith('/setup')) {
+          return http.Response(
+            jsonEncode({
+              'secret': 'JBSWY3DPEHPK3PXP',
+              'otpauth': 'otpauth://totp/Equitensa:test?secret=JBSWY3DPEHPK3PXP&issuer=Equitensa',
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        expect(input['code'], '123456');
+        enabled = path.endsWith('/enable');
+        return http.Response(
+          jsonEncode({'ok': true, if (enabled) 'backupCodes': List.generate(10, (i) => 'recovery-code-$i')}),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+      final copy = http.Request(request.method, request.url)
+        ..headers.addAll(request.headers)
+        ..bodyBytes = request.bodyBytes;
+      return http.Response.fromStream(await fallback.send(copy));
+    });
+    await boot(t, signedIn: true, client: client);
+    final container = ProviderScope.containerOf(t.element(find.byType(EquitensaApp)));
+    container.read(routerProvider).go('/account/security');
+    await t.pumpAndSettle();
+    await t.tap(find.text('Authenticator einrichten'));
+    await t.pumpAndSettle();
+    expect(find.text('JBSWY3DPEHPK3PXP'), findsOneWidget);
+    await t.enterText(find.byType(TextFormField).last, '123456');
+    await t.ensureVisible(find.text('Bestätigen und aktivieren'));
+    await t.tap(find.text('Bestätigen und aktivieren'));
+    await t.pumpAndSettle();
+    expect(find.textContaining('recovery-code-0'), findsOneWidget);
+    await t.pump(const Duration(seconds: 5));
+    await t.pumpAndSettle();
+    await t.ensureVisible(find.text('Codes gespeichert'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Codes gespeichert'));
+    await t.pumpAndSettle();
+    expect(find.textContaining('recovery-code-0'), findsNothing);
+    await t.enterText(find.byType(TextFormField).last, '123456');
+    await t.ensureVisible(find.text('Zwei-Faktor-Anmeldung deaktivieren'));
+    await t.tap(find.text('Zwei-Faktor-Anmeldung deaktivieren'));
+    await t.pumpAndSettle();
+    expect(enabled, isFalse);
+    expect(calls, ['/api/auth/mfa/setup', '/api/auth/mfa/enable', '/api/auth/mfa/disable']);
+    expect(t.takeException(), isNull);
+  });
+
   group('auth', () {
-    testWidgets('changing appearance keeps registration input and follows the system', (t) async {
+    testWidgets('language menu changes language without changing company country', (t) async {
+      await boot(t);
+      final container = ProviderScope.containerOf(t.element(find.byType(EquitensaApp)));
+      await t.tap(find.byTooltip('Sprache / Jezik'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Slovenian'));
+      await t.pumpAndSettle();
+      expect(container.read(languageProvider), 'sl');
+      expect(container.read(authCountryProvider), Country.de);
+      expect(find.text('Naprej'), findsOneWidget);
+      expect(t.takeException(), isNull);
+    });
+    testWidgets('all introduction steps fit a small phone in both appearances', (t) async {
+      await boot(t);
+      final container = ProviderScope.containerOf(t.element(find.byType(EquitensaApp)));
+      t.view.devicePixelRatio = 1;
+      t.view.physicalSize = const Size(320, 640);
+      for (final mode in [ThemeMode.light, ThemeMode.dark]) {
+        await container.read(appearanceProvider.notifier).set(mode);
+        container.read(routerProvider).go('/welcome');
+        await t.pumpAndSettle();
+        for (var step = 0; step < 3; step++) {
+          await t.ensureVisible(find.text(step == 2 ? 'Konto erstellen' : 'Weiter'));
+          expect(t.takeException(), isNull);
+          if (step < 2) {
+            await t.tap(find.text('Weiter'));
+            await t.pumpAndSettle();
+          }
+        }
+        await t.drag(find.byType(PageView), const Offset(700, 0));
+        await t.pumpAndSettle();
+        await t.drag(find.byType(PageView), const Offset(700, 0));
+        await t.pumpAndSettle();
+      }
+    });
+
+    testWidgets('changing appearance keeps registration input in both modes', (t) async {
       await boot(t);
       final container = ProviderScope.containerOf(t.element(find.byType(EquitensaApp)));
       container.read(routerProvider).go('/register');
@@ -354,10 +457,8 @@ void main() {
       await t.enterText(find.byType(TextField).first, 'My Company');
       await t.tap(find.byType(AppearanceButton));
       await t.pumpAndSettle();
-      await t.tap(find.text('Dunkel').last);
-      await t.pumpAndSettle();
       expect(container.read(appearanceProvider), ThemeMode.dark);
-      for (final mode in [ThemeMode.dark, ThemeMode.light, ThemeMode.system]) {
+      for (final mode in [ThemeMode.dark, ThemeMode.light]) {
         await container.read(appearanceProvider.notifier).set(mode);
         await t.pumpAndSettle();
         expect(t.widget<TextField>(find.byType(TextField).first).controller!.text, 'My Company');
@@ -366,7 +467,7 @@ void main() {
       t.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
       addTearDown(t.platformDispatcher.clearPlatformBrightnessTestValue);
       await t.pumpAndSettle();
-      expect(Theme.of(t.element(find.byType(TextField).first)).brightness, Brightness.dark);
+      expect(Theme.of(t.element(find.byType(TextField).first)).brightness, Brightness.light);
     });
     testWidgets('auth adapts to a narrow phone, keyboard and desktop', (t) async {
       await boot(t);
@@ -392,7 +493,7 @@ void main() {
 
     testWidgets('signed-out user lands on the welcome screen', (t) async {
       await boot(t);
-      expect(find.textContaining('Fair bezahlen'), findsOneWidget);
+      expect(find.textContaining('Ihr Business.'), findsOneWidget);
       expect(find.text('Weiter'), findsOneWidget);
     });
 
@@ -439,7 +540,7 @@ void main() {
       await boot(t);
       await t.tap(find.text('Weiter'));
       await t.pumpAndSettle();
-      expect(find.textContaining('Aus Zahlen'), findsOneWidget);
+      expect(find.textContaining('Faire '), findsOneWidget);
       await t.drag(find.byType(PageView), const Offset(-330, 0));
       await t.pumpAndSettle();
       expect(find.text('Konto erstellen'), findsOneWidget);

@@ -41,12 +41,12 @@ void main() {
     expect(container.read(appearanceProvider), ThemeMode.dark);
   });
 
-  test('an unknown preference falls back to the system', () async {
+  test('an unknown preference falls back to light', () async {
     final store = _Store()..value = 'obsolete';
     final container = ProviderContainer(overrides: [appearanceStoreProvider.overrideWithValue(store)]);
     addTearDown(container.dispose);
     container.read(appearanceProvider);
     await Future<void>.delayed(Duration.zero);
-    expect(container.read(appearanceProvider), ThemeMode.system);
+    expect(container.read(appearanceProvider), ThemeMode.light);
   });
 }

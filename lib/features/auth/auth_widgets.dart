@@ -300,12 +300,96 @@ class GlassButton extends StatelessWidget {
   );
 }
 
+class LanguageButton extends ConsumerWidget {
+  const LanguageButton({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final language = ref.watch(languageProvider);
+    return PopupMenuButton<String>(
+      tooltip: 'Sprache / Jezik',
+      color: context.eq.surface,
+      elevation: 12,
+      offset: const Offset(0, 52),
+      constraints: const BoxConstraints(minWidth: 240),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: BorderSide(color: context.eq.line),
+      ),
+      onSelected: (value) => ref.read(languageOverrideProvider.notifier).set(value),
+      itemBuilder: (_) => [
+        PopupMenuItem<String>(
+          enabled: false,
+          height: 38,
+          child: Text('Sprache / Jezik', style: TextStyle(color: context.eq.muted, fontSize: 12)),
+        ),
+        for (final item in [('de', 'Deutsch', 'German'), ('sl', 'Slovenščina', 'Slovenian')])
+          PopupMenuItem(
+            value: item.$1,
+            height: 68,
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: context.eq.violetSoft, borderRadius: BorderRadius.circular(12)),
+                  child: Text(
+                    item.$1.toUpperCase(),
+                    style: TextStyle(color: context.eq.accent, fontSize: 12, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        item.$2,
+                        style: TextStyle(color: context.eq.ink, fontWeight: FontWeight.w600),
+                      ),
+                      Text(item.$3, style: TextStyle(color: context.eq.muted, fontSize: 11)),
+                    ],
+                  ),
+                ),
+                if (language == item.$1) Icon(LucideIcons.circleCheck, color: context.eq.accent, size: 19),
+              ],
+            ),
+          ),
+      ],
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 13),
+        decoration: BoxDecoration(
+          color: context.eq.surface,
+          border: Border.all(color: context.eq.line),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.languages, color: context.eq.accent, size: 17),
+            const SizedBox(width: 8),
+            Text(
+              language.toUpperCase(),
+              style: TextStyle(color: context.eq.ink, fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(width: 8),
+            Icon(LucideIcons.chevronDown, size: 13, color: context.eq.muted),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class AuthFrame extends ConsumerWidget {
-  const AuthFrame({super.key, required this.child});
+  final bool intro;
+  const AuthFrame({super.key, required this.child, this.intro = false});
   final Widget child;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final country = ref.watch(authCountryProvider);
     return Scaffold(
       backgroundColor: context.eq.page,
       body: DecoratedBox(
@@ -320,43 +404,13 @@ class AuthFrame extends ConsumerWidget {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 18, 16, 12),
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
                 child: Row(
                   children: [
-                    Wordmark(size: 22, color: context.eq.ink),
+                    Wordmark(size: 20, color: context.eq.ink),
                     const Spacer(),
                     const AppearanceButton(),
-                    PopupMenuButton<Country>(
-                      tooltip: 'Sprache / Jezik',
-                      color: context.eq.surface,
-                      onSelected: (c) => ref.read(authCountryProvider.notifier).set(c),
-                      itemBuilder: (_) => [
-                        for (final c in Country.values)
-                          PopupMenuItem(
-                            value: c,
-                            child: Text('${c.flag}  ${c.label}', style: TextStyle(color: context.eq.ink)),
-                          ),
-                      ],
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: context.eq.line),
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(LucideIcons.globe, color: context.eq.muted, size: 14),
-                            const SizedBox(width: 8),
-                            Text(
-                              country.language.toUpperCase(),
-                              style: TextStyle(color: context.eq.ink, fontSize: 11, fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(width: 6),
-                            Icon(LucideIcons.chevronDown, size: 12, color: context.eq.muted),
-                          ],
-                        ),
-                      ),
-                    ),
+                    const LanguageButton(),
                   ],
                 ),
               ),
@@ -364,9 +418,12 @@ class AuthFrame extends ConsumerWidget {
                 child: LayoutBuilder(
                   builder: (context, box) {
                     final form = Center(
-                      child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 480), child: child),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: intro ? 560 : 480),
+                        child: child,
+                      ),
                     );
-                    if (box.maxWidth < 900) return form;
+                    if (intro || box.maxWidth < 900) return form;
                     return Row(
                       children: [
                         Expanded(
